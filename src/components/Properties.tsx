@@ -1,4 +1,6 @@
-import React, { useEffect, useState } from "react";
+// pages/properties/index.tsx
+import React, { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/router";
 import { getProperties } from "@/pages/api/rest_api";
 
 interface Property {
@@ -12,45 +14,82 @@ interface Property {
   area: string;
   areaNepali?: string;
   distanceFromHighway?: number;
-  image: string;
+  images: string[];
   description: string;
-}
-
-interface Category {
-  id: string;
-  name: string;
-  count: number;
 }
 
 const Properties = () => {
   const [properties, setProperties] = useState<Property[]>([]);
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const [categories, setCategories] = useState<
+    { id: string; name: string; count: number }[]
+  >([]);
 
-  // Static categories
-  const [categories] = useState<Category[]>([
-    { id: "all", name: "All Properties", count: 5 },
-    { id: "apartment", name: "Apartments", count: 2 },
-    { id: "land", name: "Land Plots", count: 3 },
-    { id: "commercial", name: "Commercial", count: 1 },
-  ]);
+  const router = useRouter();
+  const propertyListRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const fetchProperties = async () => {
+    const fetchData = async () => {
       try {
         const data = await getProperties();
+
+        if (!Array.isArray(data)) {
+          console.error("Expected array but got:", data);
+          setProperties([]);
+          setCategories([{ id: "all", name: "All Properties", count: 0 }]);
+          return;
+        }
+
         setProperties(data);
+
+        const categoryMap: Record<string, number> = {};
+        data.forEach((property: Property) => {
+          categoryMap[property.category] =
+            (categoryMap[property.category] || 0) + 1;
+        });
+
+        const dynamicCategories = Object.entries(categoryMap).map(
+          ([key, count]) => ({
+            id: key,
+            name: key.charAt(0).toUpperCase() + key.slice(1),
+            count,
+          })
+        );
+
+        setCategories([
+          { id: "all", name: "All Properties", count: data.length },
+          ...dynamicCategories,
+        ]);
       } catch (error) {
         console.error("Failed to fetch properties:", error);
       }
     };
 
-    fetchProperties();
+    fetchData();
   }, []);
 
   const filteredProperties =
     selectedCategory === "all"
       ? properties
-      : properties.filter((prop) => prop.category === selectedCategory);
+      : properties.filter((p) => p.category === selectedCategory);
+
+  const handleScrollToProperties = () => {
+    setSelectedCategory("all");
+    propertyListRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status.toLowerCase()) {
+      case "available":
+        return "text-green-600";
+      case "sold":
+        return "text-red-600";
+      case "pending":
+        return "text-yellow-500";
+      default:
+        return "text-slate-600";
+    }
+  };
 
   return (
     <section className="bg-slate-800 py-16 px-4">
@@ -67,34 +106,44 @@ const Properties = () => {
           potential — for both new and seasoned investors.
         </p>
         <div className="mt-6 flex justify-center flex-wrap gap-3">
-          {categories.map((category) => (
+          {categories.map((cat) => (
             <button
-              key={category.id}
-              onClick={() => setSelectedCategory(category.id)}
+              key={cat.id}
+              onClick={() => setSelectedCategory(cat.id)}
               className={`px-5 py-2 rounded-full border font-medium transition ${
-                selectedCategory === category.id
+                selectedCategory === cat.id
                   ? "bg-blue-600 text-white"
                   : "bg-white text-slate-700 border-slate-300 hover:bg-blue-50"
               }`}
             >
-              {category.name} ({category.count})
+              {cat.name} ({cat.count})
             </button>
           ))}
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
+      <div
+        ref={propertyListRef}
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto"
+      >
         {filteredProperties.map((property) => (
           <div
             key={property.id}
-            className="bg-slate-50 rounded-2xl shadow-lg hover:shadow-xl transition-all p-6 flex flex-col"
+            onClick={() => router.push(`/properties/${property.id}`)}
+            className="cursor-pointer bg-white rounded-2xl shadow-md hover:shadow-xl transition-all p-6 flex flex-col"
           >
-            <div className="text-5xl text-center mb-4">{property.image}</div>
+            {property.images?.length > 0 && (
+              <img
+                src={`http://localhost:3000${property.images[0]}`}
+                alt={property.title}
+                className="w-full h-52 object-cover rounded-xl mb-4"
+              />
+            )}
             <h3 className="text-lg font-semibold text-slate-800 mb-1">
               {property.title}
             </h3>
             <p className="text-sm text-slate-500 mb-2">{property.location}</p>
-            <p className="text-slate-600 text-sm mb-4">
+            <p className="text-slate-600 text-sm mb-4 line-clamp-3">
               {property.description}
             </p>
             <div className="grid grid-cols-2 gap-4 text-sm text-slate-700 mt-auto">
@@ -124,6 +173,12 @@ const Properties = () => {
                   <p className="text-xs text-slate-500">From Highway</p>
                 </div>
               )}
+              <div>
+                <p className={`font-medium ${getStatusColor(property.status)}`}>
+                  {property.status}
+                </p>
+                <p className="text-xs text-slate-500">Status</p>
+              </div>
             </div>
           </div>
         ))}
@@ -139,7 +194,10 @@ const Properties = () => {
           <button className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition">
             Make a Call
           </button>
-          <button className="border border-slate-300 text-white px-6 py-2 rounded-lg hover:bg-slate-700 transition">
+          <button
+            onClick={handleScrollToProperties}
+            className="border border-slate-300 text-white px-6 py-2 rounded-lg hover:bg-slate-700 transition"
+          >
             View All Properties
           </button>
         </div>
