@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { contactInfo } from "../utils/ContactInformation";
+import { baseUrl } from "@/pages/api/rest_api";
 
 const ContactSection: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -28,7 +29,8 @@ const ContactSection: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const { name, email, phone, investmentRange, propertyType } = formData;
+    const { name, email, phone, investmentRange, propertyType, message } =
+      formData;
 
     // Basic required fields check
     if (!name.trim() || !email.trim() || !investmentRange || !propertyType) {
@@ -52,20 +54,47 @@ const ContactSection: React.FC = () => {
 
     setIsSubmitting(true);
 
-    setTimeout(() => {
-      setIsSubmitting(false);
-      alert(
-        "Thank you for your inquiry! We'll get back to you within 24 hours."
-      );
-      setFormData({
-        name: "",
-        email: "",
-        phone: "",
-        investmentRange: "",
-        propertyType: "",
-        message: "",
+    try {
+      const response = await fetch(`${baseUrl}/contacts`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name,
+          email,
+          phone,
+          investmentRange,
+          propertyType,
+          message,
+        }),
       });
-    }, 2000);
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        alert(
+          `Failed to send message: ${errorData.message || "Unknown error"}`
+        );
+      } else {
+        alert(
+          "Thank you for your inquiry! We'll get back to you within 24 hours."
+        );
+        setFormData({
+          name: "",
+          email: "",
+          phone: "",
+          investmentRange: "",
+          propertyType: "",
+          message: "",
+        });
+      }
+    } catch (error) {
+      alert(
+        "An error occurred while sending your message. Please try again later."
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const contactMethods = [
@@ -189,7 +218,7 @@ const ContactSection: React.FC = () => {
               </p>
             </div>
 
-            <div className="space-y-6">
+            <form className="space-y-6" onSubmit={handleSubmit}>
               <div className="grid md:grid-cols-2 gap-6">
                 <div>
                   <label
@@ -254,17 +283,18 @@ const ContactSection: React.FC = () => {
                     htmlFor="investmentRange"
                     className="block text-sm font-medium text-slate-300 mb-2"
                   >
-                    Investment Range
+                    Investment Range *
                   </label>
                   <select
                     id="investmentRange"
                     name="investmentRange"
                     value={formData.investmentRange}
                     onChange={handleInputChange}
+                    required
                     className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20 transition-all"
                   >
                     <option value="">Select Range</option>
-                    <option value="1cr-cr">1Cr - 2Cr</option>
+                    <option value="1cr-2cr">1Cr - 2Cr</option>
                     <option value="2cr-3cr">2Cr - 3Cr</option>
                     <option value="3cr-5cr">3Cr - 5Cr</option>
                     <option value="5cr+">5Cr +</option>
@@ -278,13 +308,14 @@ const ContactSection: React.FC = () => {
                   htmlFor="propertyType"
                   className="block text-sm font-medium text-slate-300 mb-2"
                 >
-                  Property Interest
+                  Property Interest *
                 </label>
                 <select
                   id="propertyType"
                   name="propertyType"
                   value={formData.propertyType}
                   onChange={handleInputChange}
+                  required
                   className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20 transition-all"
                 >
                   <option value="">Select Property Type</option>
@@ -316,8 +347,7 @@ const ContactSection: React.FC = () => {
               </div>
 
               <button
-                type="button"
-                onClick={handleSubmit}
+                type="submit"
                 disabled={isSubmitting}
                 className="w-full px-8 py-4 bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-semibold rounded-lg hover:from-blue-600 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-400/50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
               >
@@ -349,7 +379,7 @@ const ContactSection: React.FC = () => {
                   "Send Message"
                 )}
               </button>
-            </div>
+            </form>
           </div>
 
           {/* Contact Information */}

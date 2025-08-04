@@ -6,7 +6,7 @@ import { getProperties } from "@/pages/api/rest_api";
 interface Property {
   id: number;
   title: string;
-  category: string;
+  categoryId: number;
   location: string;
   price: string;
   roi: string;
@@ -16,6 +16,9 @@ interface Property {
   distanceFromHighway?: number;
   images: string[];
   description: string;
+  category: {
+    name: string;
+  };
 }
 
 const Properties = () => {
@@ -44,14 +47,14 @@ const Properties = () => {
 
         const categoryMap: Record<string, number> = {};
         data.forEach((property: Property) => {
-          categoryMap[property.category] =
-            (categoryMap[property.category] || 0) + 1;
+          const name = property.category?.name || "Unknown";
+          categoryMap[name] = (categoryMap[name] || 0) + 1;
         });
 
         const dynamicCategories = Object.entries(categoryMap).map(
-          ([key, count]) => ({
-            id: key,
-            name: key.charAt(0).toUpperCase() + key.slice(1),
+          ([name, count]) => ({
+            id: name,
+            name,
             count,
           })
         );
@@ -71,7 +74,7 @@ const Properties = () => {
   const filteredProperties =
     selectedCategory === "all"
       ? properties
-      : properties.filter((p) => p.category === selectedCategory);
+      : properties.filter((p) => p.category?.name === selectedCategory);
 
   const handleScrollToProperties = () => {
     setSelectedCategory("all");

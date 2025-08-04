@@ -1,11 +1,12 @@
 // pages/properties/[id].tsx
 import { useRouter } from "next/router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { contactInfo } from "@/utils/ContactInformation";
 
 interface Property {
   id: number;
   title: string;
-  category: string;
+  categoryId: number;
   location: string;
   price: string;
   roi: string;
@@ -15,6 +16,9 @@ interface Property {
   distanceFromHighway?: number;
   images: string[];
   description: string;
+  category: {
+    name: string;
+  };
 }
 
 const PropertyDetail = () => {
@@ -23,6 +27,17 @@ const PropertyDetail = () => {
   const [property, setProperty] = useState<Property | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState(0);
+  const imageRef = useRef<HTMLDivElement | null>(null);
+
+  const handleFullscreenToggle = () => {
+    if (!document.fullscreenElement) {
+      imageRef.current?.requestFullscreen().catch((err) => {
+        console.error("Failed to enter fullscreen:", err);
+      });
+    } else {
+      document.exitFullscreen();
+    }
+  };
 
   useEffect(() => {
     if (id) {
@@ -169,20 +184,20 @@ const PropertyDetail = () => {
           <div className="lg:col-span-2">
             <div className="bg-white rounded-lg shadow-md overflow-hidden">
               {/* Image Viewer with Arrows */}
-              <div className="relative h-80 lg:h-96">
+              <div className="relative h-80 lg:h-96" ref={imageRef}>
                 <img
-                  src={`http://localhost:3000${property.images[selectedImage]}`}
+                  src={`http://localhost:3000/${property.images[selectedImage]}`}
                   alt={property.title}
-                  className="w-full h-full object-cover rounded-t-lg"
+                  className="w-full h-full object-contain rounded-t-lg"
                 />
-                <div className="absolute top-4 right-4 bg-black bg-opacity-70 text-white px-3 py-1 rounded-md text-sm">
+                <div className="absolute top-4 right-4 bg-gray-400 bg-opacity-70 text-white px-3 py-1 rounded-md text-sm">
                   {selectedImage + 1} / {property.images.length}
                 </div>
 
                 {selectedImage > 0 && (
                   <button
                     onClick={() => setSelectedImage((prev) => prev - 1)}
-                    className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 hover:bg-opacity-70 text-white p-2 rounded-full"
+                    className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-gray-400 bg-opacity-50 hover:bg-opacity-70 text-white p-2 rounded-full"
                   >
                     <svg
                       className="w-5 h-5"
@@ -202,7 +217,7 @@ const PropertyDetail = () => {
                 {selectedImage < property.images.length - 1 && (
                   <button
                     onClick={() => setSelectedImage((prev) => prev + 1)}
-                    className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 hover:bg-opacity-70 text-white p-2 rounded-full"
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-gray-400 bg-opacity-50 hover:bg-opacity-70 text-white p-2 rounded-full"
                   >
                     <svg
                       className="w-5 h-5"
@@ -219,6 +234,25 @@ const PropertyDetail = () => {
                     </svg>
                   </button>
                 )}
+                <button
+                  onClick={handleFullscreenToggle}
+                  className="absolute bottom-4 right-4 bg-gray-400 bg-opacity-60 hover:bg-opacity-80 text-white p-2 rounded-md"
+                  title="Fullscreen"
+                >
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M8 3H5a2 2 0 00-2 2v3m0 8v3a2 2 0 002 2h3m8-18h3a2 2 0 012 2v3m0 8v3a2 2 0 01-2 2h-3"
+                    />
+                  </svg>
+                </button>
               </div>
 
               {/* Thumbnail Gallery */}
@@ -236,7 +270,7 @@ const PropertyDetail = () => {
                         }`}
                       >
                         <img
-                          src={`http://localhost:3000${img}`}
+                          src={`http://localhost:3000/${img}`}
                           alt={`View ${idx + 1}`}
                           className="w-full h-full object-cover"
                         />
@@ -262,7 +296,9 @@ const PropertyDetail = () => {
             {/* Price Card */}
             <div className="bg-white rounded-lg shadow-md p-6">
               <div className="text-center">
-                <p className="text-gray-600 text-sm font-medium mb-2">Price</p>
+                <p className="text-gray-600 font-medium mb-2 text-2xl">
+                  Price <span className="text-sm">(per aana)</span>
+                </p>
                 <p className="text-3xl font-bold text-gray-900 mb-4">
                   {property.price}
                 </p>
@@ -347,7 +383,7 @@ const PropertyDetail = () => {
                     Category
                   </span>
                   <span className="font-semibold text-gray-900">
-                    {property.category}
+                    {property.category?.name}
                   </span>
                 </div>
 
@@ -386,24 +422,26 @@ const PropertyDetail = () => {
                 Get in touch with our team for more information or to schedule a
                 viewing.
               </p>
-              <div className="space-y-3">
-                <button className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center">
-                  <svg
-                    className="w-4 h-4 mr-2"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
-                    />
-                  </svg>
-                  Contact Agent
-                </button>
-              </div>
+              <a href={`tel: ${contactInfo.phone}`}>
+                <div className="space-y-3">
+                  <button className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center">
+                    <svg
+                      className="w-4 h-4 mr-2"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
+                      />
+                    </svg>
+                    Contact Agent
+                  </button>
+                </div>
+              </a>
             </div>
           </div>
         </div>
