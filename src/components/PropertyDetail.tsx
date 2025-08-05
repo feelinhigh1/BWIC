@@ -2,6 +2,7 @@
 import { useRouter } from "next/router";
 import { useEffect, useRef, useState } from "react";
 import { contactInfo } from "@/utils/ContactInformation";
+import { baseUrl } from "@/pages/api/rest_api";
 
 interface Property {
   id: number;
@@ -41,7 +42,7 @@ const PropertyDetail = () => {
 
   useEffect(() => {
     if (id) {
-      fetch(`http://localhost:3000/api/properties/${id}`)
+      fetch(`${baseUrl}/api/properties/${id}`)
         .then((res) => res.json())
         .then((data) => {
           setProperty(data);
@@ -94,7 +95,7 @@ const PropertyDetail = () => {
           </p>
           <button
             onClick={() => router.push("/properties")}
-            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium cursor-pointer"
           >
             Back to Properties
           </button>
@@ -186,7 +187,7 @@ const PropertyDetail = () => {
               {/* Image Viewer with Arrows */}
               <div className="relative h-80 lg:h-96" ref={imageRef}>
                 <img
-                  src={`http://localhost:3000/${property.images[selectedImage]}`}
+                  src={`${baseUrl}/${property.images[selectedImage]}`}
                   alt={property.title}
                   className="w-full h-full object-contain rounded-t-lg"
                 />
@@ -424,7 +425,7 @@ const PropertyDetail = () => {
               </p>
               <a href={`tel: ${contactInfo.phone}`}>
                 <div className="space-y-3">
-                  <button className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center">
+                  <button className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center cursor-pointer">
                     <svg
                       className="w-4 h-4 mr-2"
                       fill="none"
@@ -450,7 +451,7 @@ const PropertyDetail = () => {
         <div className="mt-12 flex justify-center">
           <button
             onClick={() => router.push("/properties")}
-            className="inline-flex items-center px-6 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium shadow-sm"
+            className="inline-flex items-center px-6 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium shadow-sm cursor-pointer"
           >
             <svg
               className="w-4 h-4 mr-2"

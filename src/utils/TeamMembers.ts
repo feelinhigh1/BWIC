@@ -14,8 +14,7 @@ export const teamMembers: TeamMember[] = [
     position: "Founder & CEO",
     experience: "35+ years in real estate and entrepreneurship",
     image: "RP",
-    background:
-      "Property consultant, BBA from KU School of Management",
+    background: "Property consultant, BBA from KU School of Management",
     bio: "Rameshwor leads BWIC with a passion for transforming Nepal's real estate landscape through innovation and accessibility. He focuses on long-term value creation and ethical investing.",
     achievements: [
       "Founded BWIC to simplify property investment in Nepal",
@@ -24,13 +23,13 @@ export const teamMembers: TeamMember[] = [
     ],
   },
   {
-    name: "Anisha Adhikari",
+    name: "Roshan Poudel",
     position: "Chief Operating Officer",
-    experience: "4+ years in project management and operations",
+    experience: "4+ years in accounts, project management and operations",
     image: "AA",
     background:
       "Former operations lead at a fintech startup, BBA from Ace Institute",
-    bio: "Anisha ensures smooth execution of company strategies and investor services. She’s instrumental in setting up our internal processes and partner workflows.",
+    bio: "Roshan ensures smooth execution of company strategies and investor services. She’s instrumental in setting up our internal processes and partner workflows.",
     achievements: [
       "Led setup of BWIC’s investment portal",
       "Managed pilot onboarding of early investors",

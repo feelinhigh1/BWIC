@@ -1,15 +1,15 @@
-export const baseUrl = "http://localhost:3000/api";
+export const baseUrl = "http://localhost:3000";
 
 export async function getProperties() {
-  const res = await fetch(`${baseUrl}/properties`);
+  const res = await fetch(`${baseUrl}/api/properties`);
   if (!res.ok) {
     throw new Error("Failed to fetch user");
   }
   return res.json();
 }
 
-export async function deleteUser(id: number) {
-  const res = await fetch(`${baseUrl}/properties/${id}`, {
+export async function deleteProperty(id: number) {
+  const res = await fetch(`${baseUrl}/api/properties/${id}`, {
     method: "DELETE",
   });
 

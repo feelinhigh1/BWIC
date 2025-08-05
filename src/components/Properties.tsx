@@ -2,6 +2,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import { getProperties } from "@/pages/api/rest_api";
+import { baseUrl } from "@/pages/api/rest_api";
 
 interface Property {
   id: number;
@@ -137,7 +138,7 @@ const Properties = () => {
           >
             {property.images?.length > 0 && (
               <img
-                src={`http://localhost:3000${property.images[0]}`}
+                src={`${baseUrl}/${property.images[0]}`}
                 alt={property.title}
                 className="w-full h-52 object-cover rounded-xl mb-4"
               />
