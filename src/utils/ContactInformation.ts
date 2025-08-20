@@ -9,7 +9,7 @@ export interface ContactInformation {
 }
 
 export const contactInfo: ContactInformation = {
-  email: "sushan.poudel.242833@gmail.com",
+  email: "bwic@gmail.com",
   phone: "+977 9851069535",
   address: {
     street: "Nagarjun Tole, Bafal-13",

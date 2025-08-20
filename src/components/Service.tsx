@@ -3,7 +3,7 @@ import { services, processSteps } from "@/utils/Services";
 
 const Service = () => {
   return (
-    <div className="bg-slate-800 min-h-screen">
+    <div className="bg-slate-800 min-h-screen lg-mt-15 mt-10">
       {/* Header Section */}
       <section className="py-20 px-4">
         <div className="max-w-6xl mx-auto text-center">
@@ -19,7 +19,7 @@ const Service = () => {
       </section>
 
       {/* Services Grid */}
-      <section className="py-16 px-4">
+      <section className="sm:py-8 px-4">
         <div className="max-w-6xl mx-auto">
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-10">
             {services.map((service, index) => (

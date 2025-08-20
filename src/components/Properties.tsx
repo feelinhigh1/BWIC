@@ -3,6 +3,8 @@ import React, { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import { getProperties } from "@/pages/api/rest_api";
 import { baseUrl } from "@/pages/api/rest_api";
+import { capitalize } from "@/utils/Capitalize";
+import { contactInfo } from "@/utils/ContactInformation";
 
 interface Property {
   id: number;
@@ -120,7 +122,7 @@ const Properties = () => {
                   : "bg-white text-slate-700 border-slate-300 hover:bg-blue-50"
               }`}
             >
-              {cat.name} ({cat.count})
+              {capitalize(cat.name)} ({cat.count})
             </button>
           ))}
         </div>
@@ -147,7 +149,7 @@ const Properties = () => {
               {property.title}
             </h3>
             <p className="text-sm text-slate-500 mb-2">{property.location}</p>
-            <p className="text-slate-600 text-sm mb-4 line-clamp-3">
+            <p className="text-slate-600 text-sm mb-4 truncate">
               {property.description}
             </p>
             <div className="grid grid-cols-2 gap-4 text-sm text-slate-700 mt-auto">
@@ -195,12 +197,12 @@ const Properties = () => {
           started.
         </p>
         <div className="flex justify-center gap-4 flex-wrap">
-          <button className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition">
-            Make a Call
+          <button className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition cursor-pointer">
+            <a href={`tel: ${contactInfo.phone}`}>Make a Call</a>
           </button>
           <button
             onClick={handleScrollToProperties}
-            className="border border-slate-300 text-white px-6 py-2 rounded-lg hover:bg-slate-700 transition"
+            className="border border-slate-300 text-white px-6 py-2 rounded-lg hover:bg-slate-700 transition cursor-pointer"
           >
             View All Properties
           </button>

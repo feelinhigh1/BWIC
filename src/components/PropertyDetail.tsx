@@ -3,6 +3,7 @@ import { useRouter } from "next/router";
 import { useEffect, useRef, useState } from "react";
 import { contactInfo } from "@/utils/ContactInformation";
 import { baseUrl } from "@/pages/api/rest_api";
+import { capitalize } from "@/utils/Capitalize";
 
 interface Property {
   id: number;
@@ -43,8 +44,16 @@ const PropertyDetail = () => {
   useEffect(() => {
     if (id) {
       fetch(`${baseUrl}/api/properties/${id}`)
-        .then((res) => res.json())
-        .then((data) => {
+        .then(async (res) => {
+          if (res.status === 404) {
+            setProperty(null);
+            setLoading(false);
+            return;
+          }
+          if (!res.ok) {
+            throw new Error("Failed to fetch");
+          }
+          const data = await res.json();
           setProperty(data);
           setLoading(false);
         })
@@ -70,14 +79,15 @@ const PropertyDetail = () => {
 
   if (!property) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center max-w-md">
-          <div className="w-20 h-20 mx-auto mb-6 bg-red-100 rounded-full flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+        <div className="text-center max-w-sm bg-white p-10 rounded-xl shadow-lg border border-gray-200">
+          <div className="mx-auto mb-6 w-24 h-24 flex items-center justify-center rounded-full bg-red-50 animate-pulse">
             <svg
-              className="w-10 h-10 text-red-600"
+              className="w-12 h-12 text-red-600"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
+              aria-hidden="true"
             >
               <path
                 strokeLinecap="round"
@@ -87,16 +97,33 @@ const PropertyDetail = () => {
               />
             </svg>
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">
+
+          <h2 className="text-3xl font-extrabold text-gray-900 mb-2">
             Property Not Found
           </h2>
-          <p className="text-gray-600 mb-6">
-            The property you're looking for doesn't exist or has been removed.
+          <p className="text-gray-600 mb-8 leading-relaxed">
+            Sorry, the property you're looking for doesn't exist or may have
+            been removed.
           </p>
+
           <button
             onClick={() => router.push("/properties")}
-            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium cursor-pointer"
+            className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 transition-colors font-semibold shadow-md mx-auto"
           >
+            <svg
+              className="w-5 h-5 mr-2"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M10 19l-7-7m0 0l7-7m-7 7h18"
+              />
+            </svg>
             Back to Properties
           </button>
         </div>
@@ -384,7 +411,7 @@ const PropertyDetail = () => {
                     Category
                   </span>
                   <span className="font-semibold text-gray-900">
-                    {property.category?.name}
+                    {capitalize(property.category?.name)}
                   </span>
                 </div>
 
