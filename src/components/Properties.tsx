@@ -155,7 +155,7 @@ const Properties = () => {
             <div className="grid grid-cols-2 gap-4 text-sm text-slate-700 mt-auto">
               <div>
                 <p className="font-medium">{property.price}</p>
-                <p className="text-xs text-slate-500">Price</p>
+                <p className="text-xs text-slate-500">Price (per aana)</p>
               </div>
               <div>
                 <p className="font-medium">{property.roi}</p>

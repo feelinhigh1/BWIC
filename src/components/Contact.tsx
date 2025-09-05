@@ -55,7 +55,7 @@ const ContactSection: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch(`${baseUrl}/contacts`, {
+      const response = await fetch(`${baseUrl}/api/contacts`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
