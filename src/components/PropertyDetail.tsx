@@ -328,14 +328,14 @@ const PropertyDetail = () => {
                   Price <span className="text-sm">(per aana)</span>
                 </p>
                 <p className="text-3xl font-bold text-gray-900 mb-4">
-                  {property.price}
+                  NRs. {property.price}
                 </p>
                 <div className="bg-blue-50 rounded-lg p-4">
                   <p className="text-blue-600 text-sm font-medium">
                     Expected ROI
                   </p>
                   <p className="text-xl font-bold text-blue-700">
-                    {property.roi}
+                    {property.roi}%
                   </p>
                 </div>
               </div>

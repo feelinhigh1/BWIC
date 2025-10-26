@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import Table from "./Table"; // Adjust path as needed
+import Table from "../Table"; // Adjust path as needed
 import router from "next/router";
 
 interface Category {
@@ -33,12 +33,17 @@ export default function PropertyTable() {
       .then((res) => res.json())
       .then((data: Property[]) => {
         // Optional: remove unwanted fields like createdAt and updatedAt
-        const cleaned: any = data.map(({ createdAt, updatedAt, ...rest }) => ({
-          ...rest,
-          price: `NPR ${rest.price} per aana`,
-          category: rest.category?.name ?? "N/A",
-          images: `${rest.images.length} image(s)`,
-        }));
+        const cleaned: any = data.map(
+          ({ createdAt, updatedAt, categoryId, description, ...rest }) => ({
+            ...rest,
+            area: `${rest.area} sq ft`,
+            distanceFromHighway: `${rest.distanceFromHighway}m`,
+            roi: `${rest.roi}%`,
+            price: `Nrs. ${rest.price} per aana`,
+            category: rest.category?.name ?? "N/A",
+            images: `${rest.images.length} image(s)`,
+          })
+        );
 
         setProperties(cleaned);
       })

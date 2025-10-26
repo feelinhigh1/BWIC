@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useRouter } from "next/router";
 
 interface Category {
   id: number;
@@ -18,6 +19,7 @@ interface PropertyFormData {
   areaNepali?: string;
   distanceFromHighway?: number;
   images: File[];
+  existingImages?: string[];
   description: string;
 }
 
@@ -32,34 +34,71 @@ const initialFormData: PropertyFormData = {
   areaNepali: "",
   distanceFromHighway: undefined,
   images: [],
+  existingImages: [],
   description: "",
 };
 
-const AddProperty: React.FC = () => {
+const EditProperty: React.FC = () => {
+  const router = useRouter();
+  const { id } = router.query;
+
   const [formData, setFormData] = useState<PropertyFormData>(initialFormData);
   const [previews, setPreviews] = useState<string[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
   const [loadingCategories, setLoadingCategories] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
 
+  // Fetch categories + property data
   useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const res = await fetch("http://localhost:3000/api/categories/");
-        if (!res.ok) throw new Error("Failed to fetch categories");
+    if (!id) return;
 
-        const data = await res.json();
-        setCategories(data);
-      } catch (error) {
-        console.error("Error fetching categories:", error);
+    const fetchData = async () => {
+      try {
+        const [catRes, propRes] = await Promise.all([
+          fetch("http://localhost:3000/api/categories"),
+          fetch(`http://localhost:3000/api/properties/${id}`),
+        ]);
+
+        if (!catRes.ok || !propRes.ok) throw new Error("Failed to fetch data");
+
+        const imageBaseUrl = "http://localhost:3000";
+        const categories = await catRes.json();
+        const property = await propRes.json();
+
+        const existing = (property.images || []).map((img: string) =>
+          img.startsWith("http") ? img : `${imageBaseUrl}${img}`
+        );
+
+        setCategories(categories);
+        setFormData({
+          ...initialFormData,
+          ...property,
+          existingImages: existing,
+        });
+        setPreviews(existing); // start with existing previews
+      } catch (err) {
+        console.error("Error loading property:", err);
       } finally {
+        setLoading(false);
         setLoadingCategories(false);
       }
     };
 
-    fetchCategories();
-  }, []);
+    fetchData();
+  }, [id]);
 
+  // Handle cleanup (revoke blob URLs)
+  useEffect(() => {
+    return () => {
+      previews.forEach((p) => {
+        if (p && p.startsWith("blob:")) URL.revokeObjectURL(p);
+      });
+    };
+  }, [previews]);
+
+  // Handle text/number inputs
   const handleChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
@@ -75,42 +114,58 @@ const AddProperty: React.FC = () => {
     }));
   };
 
+  // Handle image upload
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      const selectedFiles = Array.from(e.target.files);
+    if (!e.target.files) return;
+    const selectedFiles = Array.from(e.target.files);
 
-      const totalFiles = formData.images.length + selectedFiles.length;
-      if (totalFiles > 10) {
-        alert("You can only upload up to 10 images.");
-        return;
-      }
-
-      setFormData((prev) => ({
-        ...prev,
-        images: [...prev.images, ...selectedFiles],
-      }));
-
-      const newPreviews = selectedFiles.map((file) =>
-        URL.createObjectURL(file)
-      );
-      setPreviews((prev) => [...prev, ...newPreviews]);
+    const totalFiles =
+      (formData.existingImages?.length || 0) +
+      formData.images.length +
+      selectedFiles.length;
+    if (totalFiles > 10) {
+      alert("You can only upload up to 10 images.");
+      return;
     }
+
+    const newPreviews = selectedFiles.map((file) => URL.createObjectURL(file));
+
+    setFormData((prev) => ({
+      ...prev,
+      images: [...prev.images, ...selectedFiles],
+    }));
+
+    setPreviews((prev) => [...prev, ...newPreviews]);
   };
 
-  const removeImage = (index: number) => {
+  // Remove image (existing or new)
+  const removeImage = (index: number, isExisting = false) => {
     setFormData((prev) => {
-      const updatedImages = [...prev.images];
-      updatedImages.splice(index, 1);
-      return { ...prev, images: updatedImages };
+      if (isExisting) {
+        const updatedExisting = [...(prev.existingImages || [])];
+        updatedExisting.splice(index, 1);
+        return { ...prev, existingImages: updatedExisting };
+      } else {
+        const updatedNew = [...prev.images];
+        updatedNew.splice(index, 1);
+        return { ...prev, images: updatedNew };
+      }
     });
 
     setPreviews((prev) => {
-      const updatedPreviews = [...prev];
-      updatedPreviews.splice(index, 1);
-      return updatedPreviews;
+      const updated = [...prev];
+      const existingCount = formData.existingImages?.length || 0;
+      const previewIndex = isExisting ? index : existingCount + index;
+      const urlToRevoke = updated[previewIndex];
+      if (urlToRevoke && urlToRevoke.startsWith("blob:")) {
+        URL.revokeObjectURL(urlToRevoke);
+      }
+      updated.splice(previewIndex, 1);
+      return updated;
     });
   };
 
+  // Validation
   const validate = () => {
     const newErrors: Record<string, string> = {};
     if (!formData.title.trim()) newErrors.title = "Title is required";
@@ -122,21 +177,15 @@ const AddProperty: React.FC = () => {
     if (!formData.area.trim()) newErrors.area = "Area is required";
     if (!formData.description.trim())
       newErrors.description = "Description is required";
-
-    if (
-      formData.areaNepali &&
-      !/^\d+-\d+-\d+-\d+(\.\d+)?$/.test(formData.areaNepali)
-    ) {
-      newErrors.areaNepali = "Invalid format (e.g., 0-0-0-0.0)";
-    }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
+  // Submit handler
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
+    setSubmitting(true);
 
     try {
       const form = new FormData();
@@ -159,30 +208,34 @@ const AddProperty: React.FC = () => {
         form.append("images", file);
       });
 
-      const res = await fetch("http://localhost:3000/api/properties", {
-        method: "POST",
+      if (formData.existingImages && formData.existingImages.length > 0) {
+        form.append("existingImages", JSON.stringify(formData.existingImages));
+      }
+
+      const res = await fetch(`http://localhost:3000/api/properties/${id}`, {
+        method: "PUT",
         body: form,
       });
 
-      if (!res.ok) throw new Error("Failed to create property");
-      const data = await res.json();
+      if (!res.ok) throw new Error("Failed to update property");
 
-      alert("Property submitted successfully!");
-      console.log("Created property:", data);
-
-      setFormData(initialFormData);
-      setPreviews([]);
+      alert("Property updated successfully!");
+      router.push("/admin/properties");
     } catch (error) {
       console.error(error);
-      alert("Failed to submit property");
+      alert("Failed to update property");
+    } finally {
+      setSubmitting(false);
     }
   };
+
+  if (loading) return <div className="p-10 text-center">Loading...</div>;
 
   return (
     <div className="pt-20 pb-20 px-4 min-h-screen bg-gray-50">
       <div className="max-w-4xl mx-auto bg-white shadow-lg rounded-lg p-8">
         <h2 className="text-2xl font-semibold text-gray-800 mb-6">
-          Add New Property
+          Edit Property
         </h2>
 
         <form
@@ -253,7 +306,8 @@ const AddProperty: React.FC = () => {
               Price per aana
             </label>
             <input
-              type="text"
+              step={100000}
+              type="number"
               name="price"
               value={formData.price}
               onChange={handleChange}
@@ -266,7 +320,9 @@ const AddProperty: React.FC = () => {
 
           {/* ROI */}
           <div>
-            <label className="block font-medium text-gray-700 mb-1">ROI</label>
+            <label className="block font-medium text-gray-700 mb-1">
+              ROI (in %)
+            </label>
             <input
               type="number"
               name="roi"
@@ -327,9 +383,6 @@ const AddProperty: React.FC = () => {
               placeholder="e.g. 0-0-0-0.0"
               className="w-full border rounded px-3 py-2"
             />
-            {errors.areaNepali && (
-              <p className="text-sm text-red-500 mt-1">{errors.areaNepali}</p>
-            )}
           </div>
 
           {/* Distance From Highway */}
@@ -347,16 +400,48 @@ const AddProperty: React.FC = () => {
             />
           </div>
 
+          {/* --- Image Upload & Preview --- */}
           <div className="md:col-span-2">
             <label className="block text-sm font-semibold text-gray-800 mb-2">
-              Upload Images <span className="text-gray-500">(max 10)</span>
+              Images
             </label>
 
-            {/* Upload Box */}
+            {/* Unified Previews */}
+            {previews.length > 0 && (
+              <div className="mb-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
+                {previews.map((src, idx) => {
+                  const existingCount = formData.existingImages?.length || 0;
+                  const isExisting = idx < existingCount;
+                  const indexInSource = isExisting ? idx : idx - existingCount;
+
+                  return (
+                    <div
+                      key={`preview-${idx}`}
+                      className="relative group rounded-lg overflow-hidden border border-gray-200 shadow-sm hover:shadow-md transition"
+                    >
+                      <img
+                        src={src}
+                        alt=""
+                        className="w-full h-32 object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeImage(indexInSource, isExisting)}
+                        className="absolute top-1 right-1 bg-red-600 text-white text-xs rounded-full px-1.5 py-0.5 opacity-0 group-hover:opacity-100 transition"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Upload New */}
             <div
               className={`border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center transition
       ${
-        formData.images.length >= 10
+        formData.images.length + (formData.existingImages?.length || 0) >= 10
           ? "border-gray-300 bg-gray-50 cursor-not-allowed"
           : "border-gray-400 hover:border-yellow-500 bg-gray-50 hover:bg-yellow-50"
       }`}
@@ -368,66 +453,19 @@ const AddProperty: React.FC = () => {
                 id="image-upload"
                 onChange={handleImageChange}
                 className="hidden"
-                disabled={formData.images.length >= 10}
+                disabled={
+                  formData.images.length +
+                    (formData.existingImages?.length || 0) >=
+                  10
+                }
               />
               <label
                 htmlFor="image-upload"
-                className={`cursor-pointer text-center ${
-                  formData.images.length >= 10
-                    ? "text-gray-400"
-                    : "text-yellow-600 hover:text-yellow-500"
-                }`}
+                className="cursor-pointer text-yellow-600 hover:text-yellow-500 text-center"
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="mx-auto h-10 w-10 mb-2"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M3 16l4-4m0 0l4 4m-4-4v12m12-16H9m0 0L9 3m0 5l12 12"
-                  />
-                </svg>
-                <span className="font-medium">
-                  {formData.images.length >= 10
-                    ? "Image limit reached"
-                    : "Click to upload or drag & drop"}
-                </span>
-                <p className="text-xs text-gray-500 mt-1">
-                  PNG, JPG up to 5MB each
-                </p>
+                Upload images
               </label>
             </div>
-
-            {/* Preview Grid */}
-            {previews.length > 0 && (
-              <div className="mt-5 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
-                {previews.map((img, i) => (
-                  <div
-                    key={i}
-                    className="relative group rounded-lg overflow-hidden border border-gray-200 shadow-sm hover:shadow-md transition"
-                  >
-                    <img
-                      src={img}
-                      alt={`Preview ${i}`}
-                      className="w-full h-32 object-cover group-hover:opacity-90"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => removeImage(i)}
-                      className="absolute top-1 right-1 bg-red-600 text-white text-xs rounded-full px-1.5 py-0.5 opacity-0 group-hover:opacity-100 transition cursor-pointer"
-                      title="Remove image"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
 
           {/* Description */}
@@ -451,9 +489,12 @@ const AddProperty: React.FC = () => {
           <div className="md:col-span-2 text-right">
             <button
               type="submit"
-              className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded transition"
+              disabled={submitting}
+              className={`${
+                submitting ? "bg-gray-400" : "bg-blue-600 hover:bg-blue-700"
+              } text-white font-medium py-2 px-6 rounded transition`}
             >
-              Add Property
+              {submitting ? "Updating..." : "Update Property"}
             </button>
           </div>
         </form>
@@ -462,4 +503,4 @@ const AddProperty: React.FC = () => {
   );
 };
 
-export default AddProperty;
+export default EditProperty;

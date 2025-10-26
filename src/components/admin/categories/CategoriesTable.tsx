@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import Table from "./Table"; // Adjust path as needed
+import Table from "../Table"; // Adjust path as needed
 import router from "next/router";
 
 interface Category {
@@ -25,7 +25,9 @@ export default function CategoryTable() {
       .catch((err) => console.error("Failed to fetch categories:", err));
   }, []);
 
-  const handleRowClick = (row: Category) => console.log("Row clicked:", row);
+  const handleRowClick = (row: Category) => {
+    router.push(`/admin/categories/${row.id}`);
+  };
   const handleEdit = (row: Category) =>
     router.push(`/admin/editCategory/${row.id}`);
   const handleDelete = async (row: Category) => {
