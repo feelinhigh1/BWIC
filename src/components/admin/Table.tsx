@@ -75,7 +75,7 @@ export default function Table<T extends Record<string, any>>({
                       e.stopPropagation();
                       onEdit?.(row);
                     }}
-                    className="px-3 py-1.5 rounded-md bg-blue-600 text-white text-xs font-medium hover:bg-blue-700 transition shadow-sm"
+                    className="px-3 py-1.5 rounded-md bg-blue-600 text-white text-xs font-medium hover:bg-blue-700 transition shadow-sm cursor-pointer"
                   >
                     Edit
                   </button>
@@ -84,7 +84,7 @@ export default function Table<T extends Record<string, any>>({
                       e.stopPropagation();
                       onDelete?.(row);
                     }}
-                    className="px-3 py-1.5 rounded-md bg-red-600 text-white text-xs font-medium hover:bg-red-700 transition shadow-sm"
+                    className="px-3 py-1.5 rounded-md bg-red-600 text-white text-xs font-medium hover:bg-red-700 transition shadow-sm cursor-pointer"
                   >
                     Delete
                   </button>

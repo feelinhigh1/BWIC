@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import Table from "./Table"; // Adjust path as needed
+import router from "next/router";
 
 interface Category {
   id: number;
@@ -28,12 +29,13 @@ export default function PropertyTable() {
   const [properties, setProperties] = useState<Property[]>([]);
 
   useEffect(() => {
-    fetch("http://localhost:3000/api/properties") // Replace with your actual endpoint
+    fetch("http://localhost:3000/api/properties")
       .then((res) => res.json())
       .then((data: Property[]) => {
         // Optional: remove unwanted fields like createdAt and updatedAt
-        const cleaned = data.map(({ createdAt, updatedAt, ...rest }) => ({
+        const cleaned: any = data.map(({ createdAt, updatedAt, ...rest }) => ({
           ...rest,
+          price: `NPR ${rest.price} per aana`,
           category: rest.category?.name ?? "N/A",
           images: `${rest.images.length} image(s)`,
         }));
@@ -44,12 +46,41 @@ export default function PropertyTable() {
   }, []);
 
   const handleRowClick = (row: Property) => console.log("Row clicked:", row);
-  const handleEdit = (row: Property) => console.log("Edit clicked:", row);
-  const handleDelete = (row: Property) => console.log("Delete clicked:", row);
+  const handleEdit = (row: Property) =>
+    router.push(`/admin/editProperty/${row.id}`);
+  const handleDelete = async (row: Property) => {
+    const confirmDelete = confirm(
+      "Are you sure you want to delete this property?"
+    );
+    if (!confirmDelete) return;
+    try {
+      const res = await fetch(
+        `http://localhost:3000/api/properties/${row.id}`,
+        {
+          method: "DELETE",
+        }
+      );
+      if (!res.ok) throw new Error("Failed to delete property");
+      alert("Property deleted successfully");
+      router.reload();
+    } catch (err) {
+      console.error("Failed to delete property:", err);
+      alert("Failed to delete property");
+    }
+  };
 
   return (
     <div className="p-6 pt-15">
-      <h2 className="text-2xl font-bold mb-4">Property List</h2>
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-4xl font-bold mb-4">Property List</h2>
+        <button
+          className="text-l font-bold text-white bg-green-500 px-4 py-2 rounded hover:cursor-pointer"
+          onClick={() => router.push("/admin/addProperty")}
+        >
+          + Add Property
+        </button>
+      </div>
+
       <Table<Property>
         data={properties}
         onRowClick={handleRowClick}

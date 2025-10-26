@@ -250,7 +250,7 @@ const AddProperty: React.FC = () => {
           {/* Price */}
           <div>
             <label className="block font-medium text-gray-700 mb-1">
-              Price
+              Price per aana
             </label>
             <input
               type="text"
@@ -268,7 +268,7 @@ const AddProperty: React.FC = () => {
           <div>
             <label className="block font-medium text-gray-700 mb-1">ROI</label>
             <input
-              type="text"
+              type="number"
               name="roi"
               value={formData.roi}
               onChange={handleChange}
@@ -302,7 +302,8 @@ const AddProperty: React.FC = () => {
           <div>
             <label className="block font-medium text-gray-700 mb-1">Area</label>
             <input
-              type="text"
+              step={10}
+              type="number"
               name="area"
               value={formData.area}
               onChange={handleChange}
@@ -316,7 +317,7 @@ const AddProperty: React.FC = () => {
           {/* Area Nepali */}
           <div>
             <label className="block font-medium text-gray-700 mb-1">
-              Area (Nepali format)
+              Area (R-A-P-D)
             </label>
             <input
               type="text"
@@ -338,6 +339,7 @@ const AddProperty: React.FC = () => {
             </label>
             <input
               type="number"
+              step={100}
               name="distanceFromHighway"
               value={formData.distanceFromHighway ?? ""}
               onChange={handleChange}
@@ -345,37 +347,87 @@ const AddProperty: React.FC = () => {
             />
           </div>
 
-          {/* Images */}
           <div className="md:col-span-2">
-            <label className="block font-medium text-gray-700 mb-1">
-              Images
+            <label className="block text-sm font-semibold text-gray-800 mb-2">
+              Upload Images <span className="text-gray-500">(max 10)</span>
             </label>
-            <input
-              type="file"
-              name="images"
-              multiple
-              onChange={handleImageChange}
-              className="w-full"
-              disabled={formData.images.length >= 10}
-            />
-            <div className="mt-3 flex flex-wrap gap-4">
-              {previews.map((img, i) => (
-                <div key={i} className="relative group">
-                  <img
-                    src={img}
-                    alt={`Preview ${i}`}
-                    className="w-24 h-24 object-cover rounded border"
+
+            {/* Upload Box */}
+            <div
+              className={`border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center transition
+      ${
+        formData.images.length >= 10
+          ? "border-gray-300 bg-gray-50 cursor-not-allowed"
+          : "border-gray-400 hover:border-yellow-500 bg-gray-50 hover:bg-yellow-50"
+      }`}
+            >
+              <input
+                type="file"
+                name="images"
+                multiple
+                id="image-upload"
+                onChange={handleImageChange}
+                className="hidden"
+                disabled={formData.images.length >= 10}
+              />
+              <label
+                htmlFor="image-upload"
+                className={`cursor-pointer text-center ${
+                  formData.images.length >= 10
+                    ? "text-gray-400"
+                    : "text-yellow-600 hover:text-yellow-500"
+                }`}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="mx-auto h-10 w-10 mb-2"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M3 16l4-4m0 0l4 4m-4-4v12m12-16H9m0 0L9 3m0 5l12 12"
                   />
-                  <button
-                    type="button"
-                    onClick={() => removeImage(i)}
-                    className="absolute top-0 right-0 bg-red-600 text-white text-xs rounded-full px-1.5 py-0.5 hover:bg-red-700 transition"
-                  >
-                    ✕
-                  </button>
-                </div>
-              ))}
+                </svg>
+                <span className="font-medium">
+                  {formData.images.length >= 10
+                    ? "Image limit reached"
+                    : "Click to upload or drag & drop"}
+                </span>
+                <p className="text-xs text-gray-500 mt-1">
+                  PNG, JPG up to 5MB each
+                </p>
+              </label>
             </div>
+
+            {/* Preview Grid */}
+            {previews.length > 0 && (
+              <div className="mt-5 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
+                {previews.map((img, i) => (
+                  <div
+                    key={i}
+                    className="relative group rounded-lg overflow-hidden border border-gray-200 shadow-sm hover:shadow-md transition"
+                  >
+                    <img
+                      src={img}
+                      alt={`Preview ${i}`}
+                      className="w-full h-32 object-cover group-hover:opacity-90"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeImage(i)}
+                      className="absolute top-1 right-1 bg-red-600 text-white text-xs rounded-full px-1.5 py-0.5 opacity-0 group-hover:opacity-100 transition cursor-pointer"
+                      title="Remove image"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Description */}

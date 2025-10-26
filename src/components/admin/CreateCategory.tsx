@@ -1,12 +1,11 @@
 import { useState, FormEvent, ChangeEvent } from "react";
 import axios from "axios";
-import { useRouter } from "next/router";
+import router from "next/router";
 
 const CreateCategoryForm = () => {
   const [name, setName] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const router = useRouter();
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
