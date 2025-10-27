@@ -27,12 +27,13 @@ interface Property {
 
 export default function PropertyTable() {
   const [properties, setProperties] = useState<Property[]>([]);
+  const [filteredProperties, setFilteredProperties] = useState<Property[]>([]);
+  const [searchId, setSearchId] = useState("");
 
   useEffect(() => {
     fetch("http://localhost:3000/api/properties")
       .then((res) => res.json())
       .then((data: Property[]) => {
-        // Optional: remove unwanted fields like createdAt and updatedAt
         const cleaned: any = data.map(
           ({ createdAt, updatedAt, categoryId, description, ...rest }) => ({
             ...rest,
@@ -44,11 +45,26 @@ export default function PropertyTable() {
             images: `${rest.images.length} image(s)`,
           })
         );
-
         setProperties(cleaned);
+        setFilteredProperties(cleaned); // initialize filtered list
       })
       .catch((err) => console.error("Failed to fetch properties:", err));
   }, []);
+
+  // 🔍 handle search by ID
+  const handleSearch = () => {
+    if (!searchId.trim()) {
+      setFilteredProperties(properties);
+      return;
+    }
+    const id = Number(searchId);
+    if (isNaN(id)) {
+      alert("Please enter a valid numeric ID");
+      return;
+    }
+    const result = properties.filter((p) => p.id === id);
+    setFilteredProperties(result);
+  };
 
   const handleRowClick = (row: Property) => console.log("Row clicked:", row);
   const handleEdit = (row: Property) =>
@@ -75,19 +91,35 @@ export default function PropertyTable() {
   };
 
   return (
-    <div className="p-6 pt-15">
+    <div className="p-6 pt-10">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-4xl font-bold mb-4">Property List</h2>
-        <button
-          className="text-l font-bold text-white bg-green-500 px-4 py-2 rounded hover:cursor-pointer"
-          onClick={() => router.push("/admin/addProperty")}
-        >
-          + Add Property
-        </button>
+
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            placeholder="Search by ID"
+            value={searchId}
+            onChange={(e) => setSearchId(e.target.value)}
+            className="border border-gray-400 rounded px-3 py-2"
+          />
+          <button
+            onClick={handleSearch}
+            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+          >
+            Search
+          </button>
+          <button
+            className="text-l font-bold text-white bg-green-500 px-4 py-2 rounded hover:cursor-pointer"
+            onClick={() => router.push("/admin/addProperty")}
+          >
+            + Add Property
+          </button>
+        </div>
       </div>
 
       <Table<Property>
-        data={properties}
+        data={filteredProperties}
         onRowClick={handleRowClick}
         onEdit={handleEdit}
         onDelete={handleDelete}

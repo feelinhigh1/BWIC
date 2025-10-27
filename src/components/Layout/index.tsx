@@ -15,7 +15,7 @@ export default function Layout({ children, brand, navItems }: LayoutProps) {
   return (
     <>
       <Navbar brand={brand} navItems={navItems} />
-      <main className="mt-12">{children}</main>
+      <main className="md:mt-16 mt-18">{children}</main>
       <FooterSection />
     </>
   );

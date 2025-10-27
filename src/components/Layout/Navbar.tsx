@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { usePathname } from "next/navigation";
 import { navItems as defaultNavItems, NavbarItem } from "@/utils/navItems";
 import Link from "next/link";
+import { defaultBrand } from "@/utils/brand";
 
 interface NavbarProps {
   brand?: {
@@ -12,10 +13,7 @@ interface NavbarProps {
 }
 
 const Navbar: React.FC<NavbarProps> = ({
-  brand = {
-    name: "BWIC",
-    logo: "",
-  },
+  brand = defaultBrand,
   navItems = defaultNavItems,
 }) => {
   const pathname = usePathname();
