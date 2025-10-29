@@ -58,7 +58,7 @@ export default function Dashboard() {
 
   const quickActions = [
     {
-      href: "/admin/properties/new",
+      href: "/admin/addProperty",
       label: "Add New Property",
       icon: "➕",
       gradient: "from-blue-500 to-blue-600",
@@ -81,7 +81,7 @@ export default function Dashboard() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-100">
+    <div className="min-h-screen ">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Header */}
         <div className="mb-12 animate-fade-in">

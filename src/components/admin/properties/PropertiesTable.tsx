@@ -29,26 +29,47 @@ export default function PropertyTable() {
   const [properties, setProperties] = useState<Property[]>([]);
   const [filteredProperties, setFilteredProperties] = useState<Property[]>([]);
   const [searchId, setSearchId] = useState("");
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const fetchProperties = async () => {
+    setLoading(true);
+    setErrorMsg(null);
+    try {
+      const res = await fetch("http://localhost:3000/api/properties");
+
+      // Detect backend offline or invalid HTML response
+      const contentType = res.headers.get("content-type") || "";
+      if (!res.ok || contentType.includes("text/html")) {
+        throw new Error("Backend is not reachable");
+      }
+
+      const data: Property[] = await res.json();
+      const cleaned: any = data.map(
+        ({ createdAt, updatedAt, categoryId, description, ...rest }) => ({
+          ...rest,
+          area: `${rest.area} sq ft`,
+          distanceFromHighway: `${rest.distanceFromHighway}m`,
+          roi: `${rest.roi}%`,
+          price: `Nrs. ${rest.price} per aana`,
+          category: rest.category?.name ?? "N/A",
+          images: `${rest.images.length} image(s)`,
+        })
+      );
+      setProperties(cleaned);
+      setFilteredProperties(cleaned);
+    } catch (err: any) {
+      console.error("Failed to fetch properties:", err);
+      setErrorMsg(
+        "Cannot connect to backend server. Please make sure it’s running."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    fetch("http://localhost:3000/api/properties")
-      .then((res) => res.json())
-      .then((data: Property[]) => {
-        const cleaned: any = data.map(
-          ({ createdAt, updatedAt, categoryId, description, ...rest }) => ({
-            ...rest,
-            area: `${rest.area} sq ft`,
-            distanceFromHighway: `${rest.distanceFromHighway}m`,
-            roi: `${rest.roi}%`,
-            price: `Nrs. ${rest.price} per aana`,
-            category: rest.category?.name ?? "N/A",
-            images: `${rest.images.length} image(s)`,
-          })
-        );
-        setProperties(cleaned);
-        setFilteredProperties(cleaned); // initialize filtered list
-      })
-      .catch((err) => console.error("Failed to fetch properties:", err));
+    fetchProperties();
   }, []);
 
   // 🔍 handle search by ID
@@ -89,6 +110,28 @@ export default function PropertyTable() {
       alert("Failed to delete property");
     }
   };
+
+  if (loading) {
+    return (
+      <div className="text-center text-gray-500 mt-10 text-lg">
+        Loading properties...
+      </div>
+    );
+  }
+
+  if (errorMsg) {
+    return (
+      <div className="flex flex-col items-center justify-center mt-20">
+        <h2 className="text-2xl font-bold text-red-600 mb-4">{errorMsg}</h2>
+        <button
+          onClick={fetchProperties}
+          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 pt-10">

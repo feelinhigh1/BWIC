@@ -15,7 +15,11 @@ export default function CategoryTable() {
     fetch("http://localhost:3000/api/categories")
       .then((res) => res.json())
       .then((data: Category[]) => {
-        const cleaned: any = data.map(({ ...rest }) => ({
+        // Sort categories by ID (ascending)
+        const sorted = data.sort((a, b) => a.id - b.id);
+
+        // Transform data as before
+        const cleaned: any = sorted.map(({ ...rest }) => ({
           ...rest,
           properties: `${rest.properties.length}`,
         }));
