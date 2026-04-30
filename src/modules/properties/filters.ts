@@ -37,12 +37,23 @@ export const defaultPropertyFilters: PropertyFilters = {
 
 export const defaultPropertySort: PropertySortValue = "random";
 
+export type PropertySearchMode = "smart" | "plain";
+
 export interface PropertyFilterQuery extends Partial<PropertyFilters> {
   search?: string;
+  searchMode?: PropertySearchMode;
   sort?: PropertySortValue;
   page?: number;
   limit?: number;
 }
+
+export const normalizePropertySearchInput = (value: unknown): string => {
+  if (Array.isArray(value)) {
+    return normalizePropertySearchInput(value[0]);
+  }
+
+  return typeof value === "string" ? value.trim() : "";
+};
 
 export const buildPropertySearchParams = (
   params?: PropertyFilterQuery,

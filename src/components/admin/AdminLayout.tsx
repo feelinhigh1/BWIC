@@ -13,7 +13,6 @@ import {
   LogOut,
   Mail,
   Menu,
-  Search,
   Shapes,
   X,
   type LucideIcon,
@@ -250,15 +249,6 @@ export default function AdminLayout({
             </div>
 
             <div className="flex items-center gap-3 sm:gap-5">
-              <label className="relative hidden md:block">
-                <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#7d889f]" />
-                <input
-                  type="search"
-                  placeholder="Search..."
-                  className="h-12 w-[18rem] rounded-2xl border border-transparent bg-[#dfe5ff] pl-12 pr-4 text-base text-[#334155] outline-none transition placeholder:text-[#6f7f9a] focus:border-[#b7c6ff] focus:bg-white"
-                />
-              </label>
-
               <Link
                 href={APP_ROUTES.home}
                 className="inline-flex h-11 items-center gap-2 rounded-2xl border border-[#dbe2fb] bg-white px-4 text-sm font-semibold text-[#25314d] transition hover:border-[#bfd0ff] hover:text-[#004ac6]"

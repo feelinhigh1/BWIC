@@ -4,7 +4,7 @@ import React, {
   useMemo,
   useState,
 } from "react";
-import router from "next/router";
+import { useRouter } from "next/router";
 import {
   ChevronDown,
   ChevronLeft,
@@ -17,6 +17,7 @@ import {
 import { APP_ROUTES } from "@/config/routes";
 import { assetUrl } from "@/lib/api/client";
 import { deleteProperty, getProperties } from "@/modules/properties/api";
+import { normalizePropertySearchInput } from "@/modules/properties/filters";
 import { formatPropertyReference } from "@/modules/properties/reference";
 import {
   formatPropertyStatus,
@@ -147,14 +148,40 @@ const SortChevron = () => (
 );
 
 export default function PropertiesTable() {
+  const router = useRouter();
   const [properties, setProperties] = useState<PropertySummary[]>([]);
   const [filters, setFilters] = useState<PropertyFilters>(defaultFilters);
   const [searchTerm, setSearchTerm] = useState("");
-  const [appliedSearchTerm, setAppliedSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const routeSearchTerm = useMemo(
+    () => normalizePropertySearchInput(router.query.search),
+    [router.query.search],
+  );
+
+  const updateSearchRoute = useCallback(
+    async (nextSearch: string) => {
+      const nextQuery = { ...router.query };
+
+      if (nextSearch) {
+        nextQuery.search = nextSearch;
+      } else {
+        delete nextQuery.search;
+      }
+
+      await router.replace(
+        {
+          pathname: APP_ROUTES.adminProperties,
+          query: nextQuery,
+        },
+        undefined,
+        { shallow: true },
+      );
+    },
+    [router],
+  );
 
   const fetchProperties = useCallback(async () => {
     setLoading(true);
@@ -164,7 +191,8 @@ export default function PropertiesTable() {
       const firstPage = await getProperties({
         page: 1,
         limit: PROPERTY_FETCH_LIMIT,
-        search: appliedSearchTerm || undefined,
+        search: routeSearchTerm || undefined,
+        searchMode: "plain",
       });
 
       const firstBatch = firstPage.data ?? [];
@@ -180,7 +208,8 @@ export default function PropertiesTable() {
           getProperties({
             page: index + 2,
             limit: PROPERTY_FETCH_LIMIT,
-            search: appliedSearchTerm || undefined,
+            search: routeSearchTerm || undefined,
+            searchMode: "plain",
           }),
         ),
       );
@@ -197,11 +226,40 @@ export default function PropertiesTable() {
     } finally {
       setLoading(false);
     }
-  }, [appliedSearchTerm]);
+  }, [routeSearchTerm]);
 
   useEffect(() => {
     void fetchProperties();
   }, [fetchProperties]);
+
+  useEffect(() => {
+    if (!router.isReady) {
+      return;
+    }
+
+    setSearchTerm(routeSearchTerm);
+  }, [routeSearchTerm, router.isReady]);
+
+  useEffect(() => {
+    if (!router.isReady) {
+      return;
+    }
+
+    const debounceTimer = window.setTimeout(() => {
+      const normalizedSearch = searchTerm.trim();
+
+      if (normalizedSearch === routeSearchTerm) {
+        return;
+      }
+
+      setCurrentPage(1);
+      void updateSearchRoute(normalizedSearch);
+    }, 350);
+
+    return () => {
+      window.clearTimeout(debounceTimer);
+    };
+  }, [routeSearchTerm, router.isReady, searchTerm, updateSearchRoute]);
 
   const locationOptions = useMemo(
     () =>
@@ -283,7 +341,13 @@ export default function PropertiesTable() {
   const handleSearchSubmit = (event?: React.FormEvent<HTMLFormElement>) => {
     event?.preventDefault();
     setCurrentPage(1);
-    setAppliedSearchTerm(searchTerm.trim());
+    const normalizedSearch = searchTerm.trim();
+
+    if (normalizedSearch === routeSearchTerm) {
+      return;
+    }
+
+    void updateSearchRoute(normalizedSearch);
   };
 
   const handleDelete = async (propertyId: number) => {
@@ -367,10 +431,7 @@ export default function PropertiesTable() {
               <span className="mb-3 ml-1 block text-xs font-extrabold uppercase tracking-[0.12em] text-[#1b2236]">
                 Search
               </span>
-              <form
-                onSubmit={handleSearchSubmit}
-                className="flex flex-col gap-3 sm:flex-row"
-              >
+              <form onSubmit={handleSearchSubmit}>
                 <span className="relative block flex-1">
                   <Search className="pointer-events-none absolute left-5 top-1/2 h-5 w-5 -translate-y-1/2 text-[#5b6275]" />
                   <input
@@ -381,12 +442,6 @@ export default function PropertiesTable() {
                     className="h-14 w-full rounded-2xl border border-transparent bg-[#dfe5ff] pl-14 pr-5 text-[1rem] font-medium text-[#131b2e] outline-none transition placeholder:text-[#5b6275] focus:border-[#b9c8ff] focus:bg-white focus:ring-4 focus:ring-[#004ac6]/10"
                   />
                 </span>
-                <button
-                  type="submit"
-                  className="h-14 rounded-2xl bg-[#004ac6] px-6 text-sm font-bold uppercase tracking-[0.14em] text-white transition hover:bg-[#003da4]"
-                >
-                  Search
-                </button>
               </form>
             </label>
 
@@ -457,7 +512,8 @@ export default function PropertiesTable() {
                 onClick={() => {
                   setFilters(defaultFilters);
                   setSearchTerm("");
-                  setAppliedSearchTerm("");
+                  setCurrentPage(1);
+                  void updateSearchRoute("");
                 }}
                 className="h-14 w-full rounded-2xl bg-[#dfe5ff] px-5 text-[1rem] font-bold text-[#131b2e] transition hover:bg-[#d1d9ff]"
               >
@@ -505,7 +561,9 @@ export default function PropertiesTable() {
                       colSpan={7}
                       className="px-6 py-20 text-center text-lg text-[#5b6275]"
                     >
-                      No properties match the current filters.
+                      {routeSearchTerm
+                        ? `No properties found for "${routeSearchTerm}".`
+                        : "No properties match the current filters."}
                     </td>
                   </tr>
                 )}

@@ -214,6 +214,12 @@ export default function PropertyFormScreen({
   const locationFieldRef = useRef<HTMLLabelElement | null>(null);
   const canUploadMore = previewImages.length < PROPERTY_IMAGE_UPLOAD_LIMIT;
 
+  const preventNumberInputScroll = (
+    event: React.WheelEvent<HTMLInputElement>,
+  ) => {
+    event.currentTarget.blur();
+  };
+
   useEffect(() => {
     if (!isLocationDropdownOpen) {
       return;
@@ -476,6 +482,7 @@ export default function PropertyFormScreen({
                     name="price"
                     value={formData.price}
                     onChange={onFieldChange}
+                    onWheel={preventNumberInputScroll}
                     placeholder="45000000"
                     className={`${getFieldClassName(Boolean(errors.price))} pl-12`}
                   />
@@ -498,6 +505,7 @@ export default function PropertyFormScreen({
                     name="roi"
                     value={formData.roi}
                     onChange={onFieldChange}
+                    onWheel={preventNumberInputScroll}
                     placeholder="12.5"
                     className={`${getFieldClassName(Boolean(errors.roi))} pr-10`}
                   />
@@ -569,6 +577,7 @@ export default function PropertyFormScreen({
                   name="area"
                   value={formData.area}
                   onChange={onFieldChange}
+                  onWheel={preventNumberInputScroll}
                   placeholder="5400"
                   className={getFieldClassName(Boolean(errors.area))}
                 />
@@ -610,6 +619,7 @@ export default function PropertyFormScreen({
                     name="distanceFromHighway"
                     value={formData.distanceFromHighway ?? ""}
                     onChange={onFieldChange}
+                    onWheel={preventNumberInputScroll}
                     placeholder="150"
                     className={`${getFieldClassName(
                       Boolean(errors.distanceFromHighway),
