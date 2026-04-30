@@ -129,8 +129,8 @@ const getAreaDisplay = (
 };
 
 const getMetricLabel = (property: PropertySummary): string => {
-  const categoryName = property.category?.name?.toLowerCase() ?? "";
-  return categoryName.includes("land") ? "Appreciation" : "Investment ROI";
+  void property;
+  return "Expected ROI";
 };
 
 const getCategoryLabel = (property: PropertySummary): string =>
