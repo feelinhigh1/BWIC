@@ -362,18 +362,9 @@ const PropertyDetail = () => {
 
             <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
               <div className="max-w-4xl">
-                <div className="flex flex-wrap items-center gap-4">
-                  <h1 className="font-auth-headline text-[44px] font-bold tracking-[-0.05em] text-[#131b2e] sm:text-[60px]">
-                    {property.title}
-                  </h1>
-                  <span
-                    className={`inline-flex rounded-full px-4 py-1 text-[10px] font-bold uppercase tracking-[0.18em] ${getPropertyStatusBadgeClass(
-                      property.status,
-                    )}`}
-                  >
-                    {statusLabel}
-                  </span>
-                </div>
+                <h1 className="font-auth-headline text-[44px] font-bold tracking-[-0.05em] text-[#131b2e] sm:text-[60px]">
+                  {property.title}
+                </h1>
 
                 <div className="mt-4 flex items-start gap-2 text-[#434655]">
                   <MapPin className="mt-1 h-5 w-5 shrink-0 text-[#0b46cf]" />
@@ -383,12 +374,19 @@ const PropertyDetail = () => {
                 </div>
               </div>
 
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-3 md:justify-end md:self-start">
+                <span
+                  className={`inline-flex h-11 items-center rounded-full px-5 text-[11px] font-bold uppercase tracking-[0.18em] ${getPropertyStatusBadgeClass(
+                    property.status,
+                  )}`}
+                >
+                  {statusLabel}
+                </span>
                 <FavoriteButton
                   propertyId={property.id}
                   variant="inline"
                   showLabel
-                  className="rounded-[12px] px-5 py-3"
+                  className="h-11 rounded-[14px] px-4"
                 />
               </div>
             </div>
@@ -501,9 +499,6 @@ const PropertyDetail = () => {
                 </h2>
 
                 <div className="rounded-[18px] border border-[#ece7df] bg-white p-8 shadow-[0_12px_30px_rgba(19,27,46,0.04)]">
-                  <p className="mb-4 text-[28px] italic leading-tight text-[#0b46cf]">
-                    “{categoryName} Investment Opportunity”
-                  </p>
                   <p className="whitespace-pre-line text-[18px] leading-9 text-[#434655]">
                     {description}
                   </p>

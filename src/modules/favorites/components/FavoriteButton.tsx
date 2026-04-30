@@ -22,10 +22,10 @@ interface FavoriteButtonProps {
 }
 
 const iconBaseClassName =
-  "inline-flex h-11 w-11 items-center justify-center rounded-lg border border-white/70 bg-white/95 text-slate-700 shadow-lg shadow-slate-950/10 transition hover:border-red-200 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-70";
+  "inline-flex h-11 w-11 cursor-pointer items-center justify-center rounded-lg border border-white/70 bg-white/95 text-slate-700 shadow-lg shadow-slate-950/10 transition hover:border-red-200 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-70";
 
 const inlineBaseClassName =
-  "inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-red-200 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-70";
+  "inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-red-200 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-70";
 
 const FavoriteButton = ({
   propertyId,
@@ -136,7 +136,7 @@ const FavoriteButton = ({
   ]
     .filter(Boolean)
     .join(" ");
-  const label = isFavorited ? "Saved" : "Save";
+  const label = isFavorited ? "In favourites" : "Add to favourites";
 
   return (
     <>
@@ -147,7 +147,9 @@ const FavoriteButton = ({
         className={buttonClassName}
         aria-pressed={isFavorited}
         aria-label={
-          isFavorited ? "Remove property from favorites" : "Add property to favorites"
+          isFavorited
+            ? "Remove property from favourites"
+            : "Add property to favourites"
         }
         title={error || label}
       >
