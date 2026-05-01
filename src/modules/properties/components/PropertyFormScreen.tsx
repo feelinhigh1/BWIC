@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import React, { useEffect, useId, useRef } from "react";
-import BrandLogo from "@/components/BrandLogo";
 import {
   ArrowLeft,
   Camera,
@@ -73,7 +72,6 @@ interface PropertyFormScreenProps {
   previewImages: PreviewImage[];
   submitting: boolean;
   pageTitle: string;
-  headerTitle: string;
   headerMeta: string;
   badgeLabel: string;
   badgeClassName: string;
@@ -122,7 +120,6 @@ export default function PropertyFormScreen({
   previewImages,
   submitting,
   pageTitle,
-  headerTitle,
   headerMeta,
   badgeLabel,
   badgeClassName,
@@ -309,56 +306,58 @@ export default function PropertyFormScreen({
                 <span className={labelClassName}>
                   {PROPERTY_FORM_TEXT.locationLabel}
                 </span>
-                <MapPin className="pointer-events-none absolute left-4 top-[3.35rem] h-5 w-5 text-[#7a8aa8]" />
-                <input
-                  type="text"
-                  value={locationQuery}
-                  onChange={onLocationQueryChange}
-                  onFocus={() => onLocationDropdownOpenChange(true)}
-                  placeholder={PROPERTY_FORM_TEXT.locationPlaceholder}
-                  className={`${getFieldClassName(Boolean(errors.location))} pl-12`}
-                />
+                <div className="relative">
+                  <MapPin className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#7a8aa8]" />
+                  <input
+                    type="text"
+                    value={locationQuery}
+                    onChange={onLocationQueryChange}
+                    onFocus={() => onLocationDropdownOpenChange(true)}
+                    placeholder={PROPERTY_FORM_TEXT.locationPlaceholder}
+                    className={`${getFieldClassName(Boolean(errors.location))} pl-12`}
+                  />
 
-                {isLocationDropdownOpen ? (
-                  <div
-                    className="absolute z-20 mt-2 w-full overflow-hidden rounded-2xl border border-[#dbe3fb] bg-white shadow-[0_18px_45px_rgba(19,27,46,0.12)]"
-                    onMouseDown={(event) => event.preventDefault()}
-                  >
-                    {locationLoading ? (
-                      <div className="flex items-center gap-3 px-4 py-4 text-sm text-[#5d6a83]">
-                        <LoaderCircle className="h-4 w-4 animate-spin" />
-                        <span>{PROPERTY_FORM_TEXT.loadingLocations}</span>
-                      </div>
-                    ) : null}
-
-                    {!locationLoading && locationSuggestions.length === 0 ? (
-                      <div className="px-4 py-4 text-sm text-[#5d6a83]">
-                        {PROPERTY_FORM_TEXT.noLocations}
-                      </div>
-                    ) : null}
-
-                    {!locationLoading &&
-                      locationSuggestions.length > 0 ? (
-                        <div className="max-h-72 overflow-y-auto overscroll-contain py-1">
-                          {locationSuggestions.map((suggestion) => (
-                            <button
-                              key={suggestion.placeId}
-                              type="button"
-                              onMouseDown={(event) => event.preventDefault()}
-                              onClick={() => onLocationSelect(suggestion)}
-                              className={`block w-full px-4 py-3 text-left text-sm transition ${
-                                selectedLocationPlaceId === suggestion.placeId
-                                  ? "bg-[#eef2ff] font-semibold text-[#004ac6]"
-                                  : "text-[#24314d] hover:bg-[#f7f9ff]"
-                              }`}
-                            >
-                              {suggestion.description}
-                            </button>
-                          ))}
+                  {isLocationDropdownOpen ? (
+                    <div
+                      className="absolute z-20 mt-2 w-full overflow-hidden rounded-2xl border border-[#dbe3fb] bg-white shadow-[0_18px_45px_rgba(19,27,46,0.12)]"
+                      onMouseDown={(event) => event.preventDefault()}
+                    >
+                      {locationLoading ? (
+                        <div className="flex items-center gap-3 px-4 py-4 text-sm text-[#5d6a83]">
+                          <LoaderCircle className="h-4 w-4 animate-spin" />
+                          <span>{PROPERTY_FORM_TEXT.loadingLocations}</span>
                         </div>
                       ) : null}
-                  </div>
-                ) : null}
+
+                      {!locationLoading && locationSuggestions.length === 0 ? (
+                        <div className="px-4 py-4 text-sm text-[#5d6a83]">
+                          {PROPERTY_FORM_TEXT.noLocations}
+                        </div>
+                      ) : null}
+
+                      {!locationLoading &&
+                        locationSuggestions.length > 0 ? (
+                          <div className="max-h-72 overflow-y-auto overscroll-contain py-1">
+                            {locationSuggestions.map((suggestion) => (
+                              <button
+                                key={suggestion.placeId}
+                                type="button"
+                                onMouseDown={(event) => event.preventDefault()}
+                                onClick={() => onLocationSelect(suggestion)}
+                                className={`block w-full px-4 py-3 text-left text-sm transition ${
+                                  selectedLocationPlaceId === suggestion.placeId
+                                    ? "bg-[#eef2ff] font-semibold text-[#004ac6]"
+                                    : "text-[#24314d] hover:bg-[#f7f9ff]"
+                                }`}
+                              >
+                                {suggestion.description}
+                              </button>
+                            ))}
+                          </div>
+                        ) : null}
+                    </div>
+                  ) : null}
+                </div>
 
                 {errors.location ? (
                   <p className="mt-2 text-sm font-medium text-[#c81e1e]">
@@ -729,25 +728,6 @@ export default function PropertyFormScreen({
             </div>
           </div>
 
-          <div className="flex flex-col gap-2 border-t border-[#eef1fb] pt-6 text-[0.72rem] font-bold uppercase tracking-[0.26em] text-[#8f98af] sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-3">
-              <span className="inline-flex items-center gap-2 text-[#7d879f]">
-                <span className="h-2.5 w-2.5 rounded-full bg-[#34c759]" />
-                System Online
-              </span>
-              <span>v2.4.0-stable</span>
-            </div>
-            <div className="flex items-center gap-5">
-              <span>{headerTitle}</span>
-              <BrandLogo
-                href={APP_ROUTES.home}
-                layout="row"
-                className="items-center gap-2 text-[#8f98af]"
-                imageClassName="h-8 w-auto object-contain opacity-70"
-                caption={<span>Investment Group</span>}
-              />
-            </div>
-          </div>
         </form>
       </div>
     </section>

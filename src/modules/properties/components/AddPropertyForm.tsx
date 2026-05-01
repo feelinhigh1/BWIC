@@ -344,7 +344,6 @@ const AddPropertyForm: React.FC = () => {
       previewImages={previewImages}
       submitting={submitting}
       pageTitle={PROPERTY_FORM_TEXT.addTitle}
-      headerTitle="New Property Draft"
       headerMeta="Build a polished listing with pricing, land dimensions, media, and a strong investment narrative."
       badgeLabel={badgeLabel}
       badgeClassName={getBadgeClassName(formData.status)}

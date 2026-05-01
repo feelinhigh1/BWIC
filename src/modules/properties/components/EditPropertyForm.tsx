@@ -456,7 +456,6 @@ const EditPropertyForm: React.FC = () => {
       previewImages={previewImages}
       submitting={submitting}
       pageTitle={PROPERTY_FORM_TEXT.editTitle}
-      headerTitle={formData.title || "Property Draft"}
       headerMeta={`ID: ${reference} • Last updated ${formatLastUpdated(propertyMeta?.updatedAt)}`}
       badgeLabel={formData.status || "Draft"}
       badgeClassName={getBadgeClassName(formData.status)}
