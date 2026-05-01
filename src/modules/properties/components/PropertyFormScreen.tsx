@@ -5,14 +5,10 @@ import React, { useEffect, useId, useRef } from "react";
 import BrandLogo from "@/components/BrandLogo";
 import {
   ArrowLeft,
-  Bold,
   Camera,
   FileText,
   ImagePlus,
   Info,
-  Italic,
-  Link2,
-  List,
   LoaderCircle,
   MapPin,
   Ruler,
@@ -98,73 +94,6 @@ interface PropertyFormScreenProps {
   onReset?: () => void;
 }
 
-type DescriptionAction = "bold" | "italic" | "list" | "link";
-
-const formatDescriptionSelection = (
-  action: DescriptionAction,
-  value: string,
-  selectionStart: number,
-  selectionEnd: number,
-) => {
-  const selectedText = value.slice(selectionStart, selectionEnd);
-
-  switch (action) {
-    case "bold": {
-      const content = selectedText || "Bold text";
-      const nextValue =
-        value.slice(0, selectionStart) +
-        `**${content}**` +
-        value.slice(selectionEnd);
-      const selectionOffset = selectedText ? 2 : 0;
-      return {
-        value: nextValue,
-        selectionStart: selectionStart + selectionOffset,
-        selectionEnd:
-          selectionStart + selectionOffset + (selectedText || content).length,
-      };
-    }
-    case "italic": {
-      const content = selectedText || "Italic text";
-      const nextValue =
-        value.slice(0, selectionStart) +
-        `*${content}*` +
-        value.slice(selectionEnd);
-      const selectionOffset = selectedText ? 1 : 0;
-      return {
-        value: nextValue,
-        selectionStart: selectionStart + selectionOffset,
-        selectionEnd:
-          selectionStart + selectionOffset + (selectedText || content).length,
-      };
-    }
-    case "list": {
-      const content = selectedText || "List item";
-      const lines = content
-        .split("\n")
-        .map((line) => (line.trim().startsWith("- ") ? line : `- ${line}`))
-        .join("\n");
-      const nextValue =
-        value.slice(0, selectionStart) + lines + value.slice(selectionEnd);
-      return {
-        value: nextValue,
-        selectionStart,
-        selectionEnd: selectionStart + lines.length,
-      };
-    }
-    case "link": {
-      const content = selectedText || "Link text";
-      const template = `[${content}](https://)`;
-      const nextValue =
-        value.slice(0, selectionStart) + template + value.slice(selectionEnd);
-      return {
-        value: nextValue,
-        selectionStart: selectionStart + 1,
-        selectionEnd: selectionStart + 1 + content.length,
-      };
-    }
-  }
-};
-
 const getFieldClassName = (hasError: boolean): string =>
   `${baseFieldClassName} ${hasError ? errorFieldClassName : ""}`;
 
@@ -210,7 +139,6 @@ export default function PropertyFormScreen({
   onReset,
 }: PropertyFormScreenProps) {
   const fileInputId = useId();
-  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const locationFieldRef = useRef<HTMLLabelElement | null>(null);
   const canUploadMore = previewImages.length < PROPERTY_IMAGE_UPLOAD_LIMIT;
 
@@ -241,31 +169,6 @@ export default function PropertyFormScreen({
       document.removeEventListener("mousedown", handlePointerDownOutside);
     };
   }, [isLocationDropdownOpen, onLocationDropdownOpenChange]);
-
-  const applyDescriptionFormat = (action: DescriptionAction) => {
-    const textarea = textareaRef.current;
-
-    if (!textarea) {
-      return;
-    }
-
-    const nextDescription = formatDescriptionSelection(
-      action,
-      formData.description,
-      textarea.selectionStart,
-      textarea.selectionEnd,
-    );
-
-    onDescriptionChange(nextDescription.value);
-
-    requestAnimationFrame(() => {
-      textarea.focus();
-      textarea.setSelectionRange(
-        nextDescription.selectionStart,
-        nextDescription.selectionEnd,
-      );
-    });
-  };
 
   const handleInputFiles = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files ?? []);
@@ -769,35 +672,7 @@ export default function PropertyFormScreen({
               </div>
 
               <div className="flex h-full flex-col px-6 py-7 sm:px-8">
-                {mode === "create" ? (
-                  <div className="mb-4 flex items-center gap-2 rounded-[1.2rem] bg-[#dbe1ff] p-3">
-                    {[
-                      { key: "bold", icon: Bold, label: "Bold" },
-                      { key: "italic", icon: Italic, label: "Italic" },
-                      { key: "list", icon: List, label: "List" },
-                      { key: "link", icon: Link2, label: "Link" },
-                    ].map((item) => {
-                      const Icon = item.icon;
-
-                      return (
-                        <button
-                          key={item.key}
-                          type="button"
-                          onClick={() =>
-                            applyDescriptionFormat(item.key as DescriptionAction)
-                          }
-                          className="inline-flex h-10 w-10 items-center justify-center rounded-xl text-[#334155] transition hover:bg-white hover:text-[#004ac6]"
-                          aria-label={`Format description as ${item.label.toLowerCase()}`}
-                        >
-                          <Icon className="h-4 w-4" />
-                        </button>
-                      );
-                    })}
-                  </div>
-                ) : null}
-
                 <textarea
-                  ref={textareaRef}
                   name="description"
                   value={formData.description}
                   onChange={(event) => onDescriptionChange(event.target.value)}
