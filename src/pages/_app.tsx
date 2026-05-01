@@ -1,6 +1,7 @@
 import "@/styles/globals.css";
 import type { AppProps } from "next/app";
 import Layout from "@/components/Layout";
+import AppToaster from "@/components/ui/AppToaster";
 import AdminLayout from "@/components/admin/AdminLayout";
 import {
   APP_ROUTES,
@@ -107,6 +108,7 @@ function AppContent({ Component, pageProps }: AppProps) {
 export default function App(props: AppProps) {
   return (
     <AuthProvider>
+      <AppToaster />
       <AppContent {...props} />
     </AuthProvider>
   );

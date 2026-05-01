@@ -4,9 +4,9 @@ import React, { useEffect, useState } from "react";
 import BrandLogo from "@/components/BrandLogo";
 import { APP_ROUTES } from "@/config/routes";
 import { useAuth } from "@/hooks/useAuth";
+import { showApiErrorToast, showSuccessToast } from "@/lib/toast";
 import {
   ArrowUpRight,
-  Bell,
   Building2,
   ChevronRight,
   LayoutDashboard,
@@ -83,7 +83,7 @@ const getPageTitle = (pathname: string, fallbackTitle?: string): string => {
 
 const formatRole = (role: string | undefined): string => {
   if (!role) return "Admin";
-  if (role === "ADMIN") return "Super Admin";
+  if (role === "ADMIN") return "Admin";
   return role
     .toLowerCase()
     .split("_")
@@ -119,8 +119,15 @@ export default function AdminLayout({
   const pageTitle = getPageTitle(router.pathname, title);
 
   const handleLogout = async () => {
-    await logout();
-    await router.push(APP_ROUTES.adminLogin);
+    try {
+      await logout();
+      showSuccessToast("Logged out successfully.");
+      await router.push(APP_ROUTES.adminLogin);
+    } catch (logoutError) {
+      showApiErrorToast(logoutError, "Unable to log out right now.", {
+        id: "admin-logout-error",
+      });
+    }
   };
 
   return (
@@ -256,15 +263,6 @@ export default function AdminLayout({
                 <ArrowUpRight className="h-4 w-4" />
                 <span className="hidden sm:inline">View Site</span>
               </Link>
-
-              <button
-                type="button"
-                className="relative flex h-11 w-11 items-center justify-center rounded-full text-[#2f3347] transition hover:bg-[#eef2ff]"
-                aria-label="Notifications"
-              >
-                <Bell className="h-5 w-5" />
-                <span className="absolute right-[0.7rem] top-[0.55rem] h-2.5 w-2.5 rounded-full bg-[#d62c29] ring-2 ring-white" />
-              </button>
             </div>
           </div>
         </header>

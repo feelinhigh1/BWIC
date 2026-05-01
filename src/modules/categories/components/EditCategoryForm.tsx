@@ -1,92 +1,121 @@
-"use client";
-
-import { useState, useEffect, FormEvent, ChangeEvent } from "react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/router";
+import CategoryEditorCard from "@/modules/categories/components/CategoryEditorCard";
 import { APP_ROUTES } from "@/config/routes";
+import {
+  showErrorToast,
+  showSuccessToast,
+  showWarningToast,
+} from "@/lib/toast";
 import { getCategory, updateCategory } from "@/modules/categories/api";
+import { Pencil } from "lucide-react";
 
 const EditCategory = () => {
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   const router = useRouter();
-  const { id } = router.query;
+  const categoryId = Array.isArray(router.query.id)
+    ? router.query.id[0]
+    : router.query.id;
 
-  useEffect(() => {
-    if (id) {
-      fetchCategory();
+  const fetchCategory = useCallback(async () => {
+    if (!categoryId) {
+      return;
     }
-  }, [id]);
 
-  const fetchCategory = async () => {
+    setLoading(true);
+    setError("");
     try {
-      const category = await getCategory(String(id));
+      const category = await getCategory(categoryId);
       setName(category.name);
-    } catch (err: any) {
+    } catch {
+      showErrorToast("Failed to load category data", {
+        id: "category-load-error",
+      });
       setError("Failed to load category data");
     } finally {
       setLoading(false);
     }
-  };
+  }, [categoryId]);
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
+  useEffect(() => {
+    if (!router.isReady) {
+      return;
+    }
+
+    if (!categoryId) {
+      setLoading(false);
+      showWarningToast("Category ID is missing.", {
+        id: "category-id-missing",
+      });
+      setError("Category ID is missing.");
+      return;
+    }
+
+    void fetchCategory();
+  }, [categoryId, fetchCategory, router.isReady]);
+
+  const handleSubmit = async (event: FormEvent) => {
+    event.preventDefault();
+
+    if (!categoryId) {
+      setError("Category ID is missing.");
+      showWarningToast("Category ID is missing.", {
+        id: "category-id-submit-missing",
+      });
+      return;
+    }
+
+    const normalizedName = name.trim();
+    if (!normalizedName) {
+      setError("Category name is required.");
+      setSuccess("");
+      showWarningToast("Category name is required.", {
+        id: "category-update-validation",
+      });
+      return;
+    }
+
     setError("");
     setSuccess("");
+    setSubmitting(true);
 
     try {
-      await updateCategory(String(id), name);
-
-      setSuccess("Category updated successfully!");
-      setTimeout(() => {
-        router.push(APP_ROUTES.adminCategories);
+      await updateCategory(categoryId, normalizedName);
+      showSuccessToast("Category updated successfully.");
+      window.setTimeout(() => {
+        void router.push(APP_ROUTES.adminCategories);
       }, 1000);
-    } catch (err: any) {
-      setError(
-        err instanceof Error ? err.message : "Failed to update category",
-      );
+    } catch (err: unknown) {
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to update category";
+      setError(errorMessage);
+      showErrorToast(errorMessage, { id: "category-update-error" });
+    } finally {
+      setSubmitting(false);
     }
   };
 
-  if (loading) {
-    return <p className="text-center mt-10">Loading category data...</p>;
-  }
-
   return (
-    <div className="max-w-md mx-auto mt-30 mb-10 bg-white shadow-lg rounded-2xl p-6">
-      <h2 className="text-2xl font-bold mb-4 text-center">Edit Category</h2>
-
-      {error && <p className="text-red-500 text-sm mb-2">{error}</p>}
-      {success && <p className="text-green-500 text-sm mb-2">{success}</p>}
-
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label htmlFor="name" className="block font-medium mb-1">
-            Category Name
-          </label>
-          <input
-            type="text"
-            id="name"
-            value={name}
-            onChange={(e: ChangeEvent<HTMLInputElement>) =>
-              setName(e.target.value)
-            }
-            className="w-full border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Enter category name"
-            required
-          />
-        </div>
-
-        <button
-          type="submit"
-          className="w-full bg-blue-600 text-white rounded-lg py-2 hover:bg-blue-700 transition"
-        >
-          Update Category
-        </button>
-      </form>
-    </div>
+    <CategoryEditorCard
+      title="Edit Category"
+      name={name}
+      onNameChange={setName}
+      onSubmit={handleSubmit}
+      errorMessage={error}
+      successMessage={success}
+      submitting={submitting}
+      loading={loading}
+      loadingMessage="Loading category details..."
+      submitLabel="Update Category"
+      submittingLabel="Updating..."
+      icon={Pencil}
+      submitIcon={Pencil}
+    />
   );
 };
 

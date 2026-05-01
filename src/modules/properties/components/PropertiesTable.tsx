@@ -14,8 +14,10 @@ import {
   Search,
   Trash2,
 } from "lucide-react";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 import { APP_ROUTES } from "@/config/routes";
 import { assetUrl } from "@/lib/api/client";
+import { showApiErrorToast, showSuccessToast } from "@/lib/toast";
 import { deleteProperty, getProperties } from "@/modules/properties/api";
 import { normalizePropertySearchInput } from "@/modules/properties/filters";
 import { formatPropertyReference } from "@/modules/properties/reference";
@@ -156,6 +158,8 @@ export default function PropertiesTable() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [pendingDeleteProperty, setPendingDeleteProperty] =
+    useState<PropertySummary | null>(null);
   const routeSearchTerm = useMemo(
     () => normalizePropertySearchInput(router.query.search),
     [router.query.search],
@@ -220,6 +224,11 @@ export default function PropertiesTable() {
       ]);
     } catch (err) {
       console.error("Failed to fetch properties:", err);
+      showApiErrorToast(
+        err,
+        "Cannot connect to backend server. Please make sure it’s running.",
+        { id: "admin-properties-load-error" },
+      );
       setErrorMsg(
         "Cannot connect to backend server. Please make sure it’s running.",
       );
@@ -350,24 +359,26 @@ export default function PropertiesTable() {
     void updateSearchRoute(normalizedSearch);
   };
 
-  const handleDelete = async (propertyId: number) => {
-    const confirmDelete = window.confirm(
-      "Are you sure you want to delete this property?",
-    );
-
-    if (!confirmDelete) {
+  const handleDelete = async () => {
+    if (!pendingDeleteProperty) {
       return;
     }
 
     try {
-      setDeletingId(propertyId);
-      await deleteProperty(propertyId);
+      setDeletingId(pendingDeleteProperty.id);
+      await deleteProperty(pendingDeleteProperty.id);
       setProperties((previous) =>
-        previous.filter((property) => property.id !== propertyId),
+        previous.filter((property) => property.id !== pendingDeleteProperty.id),
       );
+      setPendingDeleteProperty(null);
+      showSuccessToast("Property deleted successfully.");
     } catch (err) {
       console.error("Failed to delete property:", err);
-      window.alert("Failed to delete property");
+      showApiErrorToast(
+        err,
+        "We couldn't delete this property right now. Please try again in a moment.",
+        { id: "admin-property-delete-error" },
+      );
     } finally {
       setDeletingId(null);
     }
@@ -659,7 +670,7 @@ export default function PropertiesTable() {
 
                             <button
                               type="button"
-                              onClick={() => void handleDelete(property.id)}
+                              onClick={() => setPendingDeleteProperty(property)}
                               disabled={deletingId === property.id}
                               className="inline-flex h-11 w-11 items-center justify-center rounded-full text-[#363c4d] transition hover:bg-[#fff0f0] hover:text-[#ba1a1a] disabled:cursor-not-allowed disabled:opacity-50"
                               aria-label={`Delete ${property.title}`}
@@ -732,6 +743,32 @@ export default function PropertiesTable() {
           </div>
         </div>
       </div>
+
+      <ConfirmModal
+        isOpen={Boolean(pendingDeleteProperty)}
+        onClose={() => {
+          if (deletingId === null) {
+            setPendingDeleteProperty(null);
+          }
+        }}
+        onConfirm={() => void handleDelete()}
+        loading={deletingId !== null}
+        loadingLabel="Deleting..."
+        confirmLabel="Delete Property"
+        icon={<Trash2 className="h-14 w-14" />}
+        title="Delete Property?"
+        description={
+          pendingDeleteProperty ? (
+            <>
+              You are about to permanently delete the property{" "}
+              <span className="font-semibold text-[#11182d]">
+                “{pendingDeleteProperty.title}”
+              </span>
+              . This action cannot be undone.
+            </>
+          ) : undefined
+        }
+      />
     </section>
   );
 }

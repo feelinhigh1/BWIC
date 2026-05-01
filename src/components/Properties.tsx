@@ -11,6 +11,7 @@ import {
 import { capitalize } from "@/utils/Capitalize";
 import { APP_ROUTES } from "@/config/routes";
 import { assetUrl } from "@/lib/api/client";
+import { showApiErrorToast } from "@/lib/toast";
 import { getCategories } from "@/modules/categories/api";
 import FavoriteButton from "@/modules/favorites/components/FavoriteButton";
 import {
@@ -230,6 +231,9 @@ const Properties = () => {
         setCategories(Array.isArray(data) ? data : []);
       } catch (fetchError) {
         console.error("Failed to fetch categories:", fetchError);
+        showApiErrorToast(fetchError, "Failed to load categories.", {
+          id: "public-categories-load-error",
+        });
       }
     };
 
@@ -262,6 +266,9 @@ const Properties = () => {
         );
       } catch (fetchError) {
         console.error("Failed to fetch properties:", fetchError);
+        showApiErrorToast(fetchError, "Failed to load properties.", {
+          id: "public-properties-load-error",
+        });
         setError("Failed to load properties.");
         setProperties([]);
       } finally {

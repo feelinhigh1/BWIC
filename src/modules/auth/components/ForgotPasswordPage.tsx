@@ -4,6 +4,7 @@ import { FormEvent, useState } from "react";
 import { ArrowLeft, KeyRound, Mail } from "lucide-react";
 import { APP_ROUTES } from "@/config/routes";
 import { getApiErrorMessage } from "@/lib/api/errors";
+import { showErrorToast, showInfoToast, showWarningToast } from "@/lib/toast";
 import { forgotPassword } from "@/modules/auth/api";
 import RecoveryShell from "@/modules/auth/components/RecoveryShell";
 import { validateForgotPasswordForm } from "@/modules/auth/form-validation";
@@ -27,6 +28,9 @@ export default function ForgotPasswordPage() {
     if (Object.keys(validationErrors).length > 0) {
       setFieldErrors(validationErrors);
       setError("Please correct the highlighted fields and try again.");
+      showWarningToast("Please correct the highlighted fields and try again.", {
+        id: "forgot-password-validation",
+      });
       return;
     }
 
@@ -40,14 +44,17 @@ export default function ForgotPasswordPage() {
         normalizedEmail,
         response.resendCooldownSeconds,
       );
+      showInfoToast(
+        "Password reset instructions have been sent if the account exists.",
+      );
       await router.push(APP_ROUTES.forgotPasswordSent);
     } catch (submissionError) {
-      setError(
-        getApiErrorMessage(
-          submissionError,
-          "Unable to send a reset link right now.",
-        ),
+      const errorMessage = getApiErrorMessage(
+        submissionError,
+        "Unable to send a reset link right now.",
       );
+      setError(errorMessage);
+      showErrorToast(errorMessage, { id: "forgot-password-error" });
     } finally {
       setIsSubmitting(false);
     }

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { MailCheck } from "lucide-react";
 import { APP_ROUTES } from "@/config/routes";
 import { getApiErrorMessage } from "@/lib/api/errors";
+import { showErrorToast, showInfoToast } from "@/lib/toast";
 import { forgotPassword } from "@/modules/auth/api";
 import RecoveryShell from "@/modules/auth/components/RecoveryShell";
 import {
@@ -86,13 +87,14 @@ export default function ForgotPasswordSentPage() {
       setStatusMessage(
         "If an account exists, a password reset link has been sent.",
       );
+      showInfoToast("A fresh password reset link has been sent if the account exists.");
     } catch (resendError) {
-      setError(
-        getApiErrorMessage(
-          resendError,
-          "Unable to resend the reset link right now.",
-        ),
+      const errorMessage = getApiErrorMessage(
+        resendError,
+        "Unable to resend the reset link right now.",
       );
+      setError(errorMessage);
+      showErrorToast(errorMessage, { id: "forgot-password-resend-error" });
     } finally {
       setIsResending(false);
     }

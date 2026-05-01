@@ -1,8 +1,6 @@
 import Head from "next/head";
 import { useRouter } from "next/router";
 import {
-  BadgeCheck,
-  BarChart3,
   CheckCircle2,
   Info,
   SlidersHorizontal,
@@ -10,6 +8,7 @@ import {
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { APP_ROUTES } from "@/config/routes";
 import { useAuth } from "@/hooks/useAuth";
+import { showErrorToast, showInfoToast, showSuccessToast, showWarningToast } from "@/lib/toast";
 import {
   getRecommendationSettings,
   resetRecommendationSettings,
@@ -31,9 +30,6 @@ const signalCopy: Record<RecommendationWeightKey, string> = {
   roi: "Projected annual yield and long-term capital appreciation potential.",
   highwayAccess: "Distance to major arterial roads and commercial transit links.",
 };
-
-const portfolioImageUrl =
-  "https://lh3.googleusercontent.com/aida-public/AB6AXuAuDjo3rZq9dr1XMkJPAGKPx9MjRvGAJkSgZ9Xom35QFyurNGDIXivUIS84b_rDPVaJorUPm9rJzoFTR3E45f0wtR7kArl3SFgT8cbVrjP0VYYhglZllbaMItpSJg_2fILN1zvHBZFagF-5x2plqtcKo7-PlSvg7AN-nIlHIwJ7SrJxVtN0gxl7YFmBkLOJU-ns33JYcdzyNTtDWaq1jEtJLpp7IQLPO4RUCU7_3r3fE197LHhJ6GROU21RZoywhF9WYb2-K54pdTE";
 
 const toWholePercent = (value: number) =>
   Math.min(RECOMMENDATION_WEIGHT_TOTAL, Math.max(0, Math.round(value)));
@@ -82,6 +78,9 @@ const RecommendationSettingsPage = () => {
 
     if (!user) {
       const redirect = encodeURIComponent(APP_ROUTES.settings);
+      showInfoToast("Please log in to access your recommendation settings.", {
+        id: "settings-login-required",
+      });
       void router.replace(`${APP_ROUTES.login}?redirect=${redirect}`);
     }
   }, [isLoading, router, user]);
@@ -110,6 +109,12 @@ const RecommendationSettingsPage = () => {
           return;
         }
 
+        showErrorToast(
+          loadError instanceof Error
+            ? loadError.message
+            : "Unable to load recommendation settings.",
+          { id: "settings-load-error" },
+        );
         setError(
           loadError instanceof Error
             ? loadError.message
@@ -202,6 +207,10 @@ const RecommendationSettingsPage = () => {
 
     if (!payload || validationError) {
       setError(validationError || "Please enter valid recommendation weights.");
+      showWarningToast(
+        validationError || "Please enter valid recommendation weights.",
+        { id: "settings-validation-error" },
+      );
       return;
     }
 
@@ -213,13 +222,15 @@ const RecommendationSettingsPage = () => {
 
       setFormState(toFormState(updated.weights));
       setIsDefault(false);
-      setMessage("Recommendation settings saved successfully.");
+      setMessage("");
+      showSuccessToast("Recommendation settings saved successfully.");
     } catch (saveError) {
-      setError(
+      const errorMessage =
         saveError instanceof Error
           ? saveError.message
-          : "Unable to save recommendation settings.",
-      );
+          : "Unable to save recommendation settings.";
+      setError(errorMessage);
+      showErrorToast(errorMessage, { id: "settings-save-error" });
     } finally {
       setIsSaving(false);
     }
@@ -234,13 +245,15 @@ const RecommendationSettingsPage = () => {
 
       setFormState(toFormState(settings.weights));
       setIsDefault(settings.isDefault);
-      setMessage("Recommendation settings reset to defaults.");
+      setMessage("");
+      showSuccessToast("Recommendation settings reset to defaults.");
     } catch (resetError) {
-      setError(
+      const errorMessage =
         resetError instanceof Error
           ? resetError.message
-          : "Unable to reset recommendation settings.",
-      );
+          : "Unable to reset recommendation settings.";
+      setError(errorMessage);
+      showErrorToast(errorMessage, { id: "settings-reset-error" });
     } finally {
       setIsResetting(false);
     }
@@ -424,56 +437,6 @@ const RecommendationSettingsPage = () => {
           )}
         </section>
 
-        <section className="mt-20 grid gap-12 md:grid-cols-2 md:items-center">
-          <div>
-            <h3 className="mb-4 font-auth-headline text-2xl font-bold text-[#131b2e]">
-              Precision Engineering for Portfolios
-            </h3>
-            <p className="mb-8 font-auth-body leading-7 text-[#434655]">
-              Our ranking engine processes thousands of data points across
-              Nepal&apos;s emerging markets. By refining these weights, you tell
-              Blue Whale exactly which dimensions of growth matter most for your
-              investment strategy.
-            </p>
-
-            <div className="space-y-6">
-              <div className="flex items-start gap-4">
-                <BadgeCheck className="mt-1 h-5 w-5 shrink-0 text-[#004ac6]" />
-                <div>
-                  <p className="font-auth-headline font-semibold text-[#131b2e]">
-                    Data-Driven Sourcing
-                  </p>
-                  <p className="font-auth-body text-sm leading-6 text-[#434655]">
-                    Validated through local government records and land registry
-                    data.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-4">
-                <BarChart3 className="mt-1 h-5 w-5 shrink-0 text-[#004ac6]" />
-                <div>
-                  <p className="font-auth-headline font-semibold text-[#131b2e]">
-                    Predictive Modeling
-                  </p>
-                  <p className="font-auth-body text-sm leading-6 text-[#434655]">
-                    Uses 5-year historical trends to forecast future
-                    appreciation rates.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="relative aspect-video overflow-hidden rounded-lg shadow-2xl">
-            <img
-              src={portfolioImageUrl}
-              alt="Investment analytics dashboard with blue charts and upward market lines"
-              className="h-full w-full object-cover"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#004ac6]/40 to-transparent" />
-          </div>
-        </section>
       </main>
     </>
   );

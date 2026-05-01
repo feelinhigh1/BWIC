@@ -8,6 +8,11 @@ import { APP_ROUTES } from "@/config/routes";
 import { useAuth } from "@/hooks/useAuth";
 import { getApiErrorMessage, getApiFieldErrors } from "@/lib/api/errors";
 import {
+  showErrorToast,
+  showSuccessToast,
+  showWarningToast,
+} from "@/lib/toast";
+import {
   clearEmailVerificationState,
   persistEmailVerificationState,
 } from "@/modules/auth/email-verification-storage";
@@ -130,6 +135,12 @@ export default function AuthPage({
     }
   }, [router.isReady, router.query.email]);
 
+  useEffect(() => {
+    if (verificationNotice) {
+      showSuccessToast(verificationNotice, { id: "email-verified" });
+    }
+  }, [verificationNotice]);
+
   const clearFieldError = (field: string) => {
     setFieldErrors((current) => {
       if (!current[field]) {
@@ -152,6 +163,9 @@ export default function AuthPage({
     if (Object.keys(validationErrors).length > 0) {
       setFieldErrors(validationErrors);
       setError("Please correct the highlighted fields and try again.");
+      showWarningToast("Please correct the highlighted fields and try again.", {
+        id: "auth-validation",
+      });
       return;
     }
 
@@ -174,6 +188,9 @@ export default function AuthPage({
           resendCooldownSeconds: 0,
           sentAt: 0,
         });
+        showSuccessToast(
+          "Account created successfully. Please verify your email.",
+        );
 
         await router.replace(
           `${APP_ROUTES.verifyEmail}?email=${encodeURIComponent(
@@ -191,6 +208,7 @@ export default function AuthPage({
       });
 
       clearEmailVerificationState();
+      showSuccessToast("Logged in successfully.");
       await router.replace(
         resolveLandingPath(
           authenticatedUser,
@@ -199,34 +217,15 @@ export default function AuthPage({
         ),
       );
     } catch (submissionError) {
-      if (
-        !isRegister &&
-        submissionError instanceof Error &&
-        submissionError.message.toLowerCase().includes("verify your email")
-      ) {
-        const normalizedEmail = email.trim().toLowerCase();
-        persistEmailVerificationState({
-          email: normalizedEmail,
-          resendCooldownSeconds: 0,
-          sentAt: 0,
-        });
-        await router.replace(
-          `${APP_ROUTES.verifyEmail}?email=${encodeURIComponent(
-            normalizedEmail,
-          )}`,
-        );
-        return;
-      }
-
       setFieldErrors(getApiFieldErrors(submissionError));
-      setError(
-        getApiErrorMessage(
-          submissionError,
-          isRegister
-            ? "Unable to create your account right now."
-            : "Unable to log in right now. Please try again later.",
-        ),
+      const errorMessage = getApiErrorMessage(
+        submissionError,
+        isRegister
+          ? "Unable to create your account right now."
+          : "Unable to log in right now. Please try again later.",
       );
+      setError(errorMessage);
+      showErrorToast(errorMessage, { id: "auth-submit-error" });
     } finally {
       setIsSubmitting(false);
     }
@@ -459,15 +458,11 @@ export default function AuthPage({
                   </label>
                 )}
 
-                {(verificationNotice || error) && (
+                {error && (
                   <div
-                    className={`rounded-lg px-4 py-3 text-sm ${
-                      error
-                        ? "border border-[#ffdad6] bg-[#fff1ef] text-[#93000a]"
-                        : "border border-[#dbe1ff] bg-[#eef0ff] text-[#004ac6]"
-                    }`}
+                    className="rounded-lg border border-[#ffdad6] bg-[#fff1ef] px-4 py-3 text-sm text-[#93000a]"
                   >
-                    {error || verificationNotice}
+                    {error}
                   </div>
                 )}
 

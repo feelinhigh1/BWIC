@@ -5,6 +5,7 @@ import {
   getApiErrorMessage,
   getApiFieldErrors,
 } from "@/lib/api/errors";
+import { showApiErrorToast, showSuccessToast } from "@/lib/toast";
 import { getCategories } from "@/modules/categories/api";
 import { getLocationSuggestions } from "@/modules/locations/api";
 import { createProperty } from "@/modules/properties/api";
@@ -92,6 +93,9 @@ const AddPropertyForm: React.FC = () => {
         setCategories(data);
       } catch (error) {
         console.error("Error fetching categories:", error);
+        showApiErrorToast(error, "We couldn't load categories right now.", {
+          id: "property-categories-load-error",
+        });
         setFormMessage({
           tone: "error",
           text: "We couldn't load categories right now.",
@@ -293,16 +297,16 @@ const AddPropertyForm: React.FC = () => {
     try {
       await createProperty(formData);
       resetForm();
-      setFormMessage({
-        tone: "success",
-        text: PROPERTY_FORM_MESSAGES.addSuccess,
-      });
+      showSuccessToast("Property added successfully.");
     } catch (error) {
       console.error(error);
       setErrors((previous) => ({
         ...previous,
         ...getApiFieldErrors(error),
       }));
+      showApiErrorToast(error, PROPERTY_FORM_MESSAGES.addError, {
+        id: "property-create-error",
+      });
       setFormMessage({
         tone: "error",
         text: getApiErrorMessage(error, PROPERTY_FORM_MESSAGES.addError),

@@ -5,6 +5,7 @@ import { Heart, SearchX } from "lucide-react";
 import { APP_ROUTES } from "@/config/routes";
 import { assetUrl } from "@/lib/api/client";
 import { useAuth } from "@/hooks/useAuth";
+import { showApiErrorToast } from "@/lib/toast";
 import { getFavorites } from "@/modules/favorites/api";
 import FavoriteButton from "@/modules/favorites/components/FavoriteButton";
 import type { FavoriteItem } from "@/modules/favorites/types";
@@ -163,6 +164,9 @@ const FavoritesPage = () => {
       } catch (fetchError) {
         if (!cancelled) {
           console.error("Failed to fetch favorites:", fetchError);
+          showApiErrorToast(fetchError, "Failed to load favorites.", {
+            id: "favorites-load-error",
+          });
           setError(
             fetchError instanceof Error
               ? fetchError.message

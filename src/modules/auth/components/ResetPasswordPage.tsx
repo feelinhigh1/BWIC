@@ -16,6 +16,11 @@ import {
   getApiErrorMessage,
   getApiFieldErrors,
 } from "@/lib/api/errors";
+import {
+  showErrorToast,
+  showSuccessToast,
+  showWarningToast,
+} from "@/lib/toast";
 import { resetPassword, validateResetToken } from "@/modules/auth/api";
 import RecoveryShell from "@/modules/auth/components/RecoveryShell";
 import { validateResetPasswordForm } from "@/modules/auth/form-validation";
@@ -136,12 +141,13 @@ export default function ResetPasswordPage() {
     });
 
     if (Object.keys(validationErrors).length > 0) {
-      setFieldErrors(validationErrors);
-      setError(
+      const errorMessage =
         validationErrors.newPassword || validationErrors.confirmPassword
           ? "Please correct the highlighted fields and try again."
-          : "This password reset link is invalid or has expired.",
-      );
+          : "This password reset link is invalid or has expired.";
+      setFieldErrors(validationErrors);
+      setError(errorMessage);
+      showWarningToast(errorMessage, { id: "reset-password-validation" });
       return;
     }
 
@@ -158,18 +164,19 @@ export default function ResetPasswordPage() {
 
       clearPasswordResetState();
       setSuccess("Password reset successful. Redirecting you to login...");
+      showSuccessToast("Password reset successful.");
 
       window.setTimeout(() => {
         void router.replace(APP_ROUTES.login);
       }, 1800);
     } catch (submissionError) {
       setFieldErrors(getApiFieldErrors(submissionError));
-      setError(
-        getApiErrorMessage(
-          submissionError,
-          "Unable to reset your password right now.",
-        ),
+      const errorMessage = getApiErrorMessage(
+        submissionError,
+        "Unable to reset your password right now.",
       );
+      setError(errorMessage);
+      showErrorToast(errorMessage, { id: "reset-password-error" });
     } finally {
       setIsSubmitting(false);
     }

@@ -2,8 +2,11 @@
 
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/router";
+import { Trash2 } from "lucide-react";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 import Table from "@/components/admin/Table";
 import { APP_ROUTES } from "@/config/routes";
+import { showApiErrorToast, showSuccessToast } from "@/lib/toast";
 import { getCategory } from "@/modules/categories/api";
 import { deleteProperty, getProperties } from "@/modules/properties/api";
 import {
@@ -22,6 +25,9 @@ export default function CategoryPropertiesPage() {
 
   const [category, setCategory] = useState<CategoryState | null>(null);
   const [loading, setLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [pendingDeleteRow, setPendingDeleteRow] =
+    useState<PropertyTableRow | null>(null);
 
   useEffect(() => {
     if (id) fetchCategoryProperties();
@@ -42,6 +48,11 @@ export default function CategoryPropertiesPage() {
       });
     } catch (err) {
       console.error("Error fetching category properties:", err);
+      showApiErrorToast(
+        err,
+        "Unable to load the category properties right now.",
+        { id: "category-properties-load-error" },
+      );
     } finally {
       setLoading(false);
     }
@@ -53,18 +64,26 @@ export default function CategoryPropertiesPage() {
   const handleEdit = (row: PropertyTableRow) =>
     router.push(APP_ROUTES.adminEditProperty(row.id));
 
-  const handleDelete = async (row: PropertyTableRow) => {
-    const confirmDelete = confirm(
-      "Are you sure you want to delete this property?",
-    );
-    if (!confirmDelete) return;
+  const handleDelete = async () => {
+    if (!pendingDeleteRow) {
+      return;
+    }
+
     try {
-      await deleteProperty(row.id);
-      alert("Property deleted successfully");
-      fetchCategoryProperties();
+      setDeletingId(pendingDeleteRow.id);
+      await deleteProperty(pendingDeleteRow.id);
+      setPendingDeleteRow(null);
+      showSuccessToast("Property deleted successfully.");
+      void fetchCategoryProperties();
     } catch (err) {
       console.error("Failed to delete property:", err);
-      alert("Failed to delete property");
+      showApiErrorToast(
+        err,
+        "We couldn't delete this property right now. Please try again in a moment.",
+        { id: "category-property-delete-error" },
+      );
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -95,13 +114,39 @@ export default function CategoryPropertiesPage() {
           data={category.properties}
           onRowClick={handleRowClick}
           onEdit={handleEdit}
-          onDelete={handleDelete}
+          onDelete={(row) => setPendingDeleteRow(row)}
         />
       ) : (
         <p className="text-gray-600 italic text-center">
           No properties available for this category.
         </p>
       )}
+
+      <ConfirmModal
+        isOpen={Boolean(pendingDeleteRow)}
+        onClose={() => {
+          if (deletingId === null) {
+            setPendingDeleteRow(null);
+          }
+        }}
+        onConfirm={() => void handleDelete()}
+        loading={deletingId !== null}
+        loadingLabel="Deleting..."
+        confirmLabel="Delete Property"
+        icon={<Trash2 className="h-14 w-14" />}
+        title="Delete Property?"
+        description={
+          pendingDeleteRow ? (
+            <>
+              You are about to permanently delete the property{" "}
+              <span className="font-semibold text-[#11182d]">
+                “{pendingDeleteRow.title}”
+              </span>
+              . This action cannot be undone.
+            </>
+          ) : undefined
+        }
+      />
     </div>
   );
 }

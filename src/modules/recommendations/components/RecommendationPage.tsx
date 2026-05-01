@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { BarChart3, MapPinned } from "lucide-react";
 import { getApiErrorMessage } from "@/lib/api/errors";
+import { showErrorToast, showWarningToast } from "@/lib/toast";
 import {
   getLocationPlaceDetails,
   getLocationSuggestions,
@@ -454,7 +455,12 @@ const RecommendationPage = () => {
         }
 
         console.error("Failed to fetch recommendations:", fetchError);
-        setError(getApiErrorMessage(fetchError, RECOMMENDATION_FORM_TEXT.loadError));
+        const errorMessage = getApiErrorMessage(
+          fetchError,
+          RECOMMENDATION_FORM_TEXT.loadError,
+        );
+        setError(errorMessage);
+        showErrorToast(errorMessage, { id: "recommendations-load-error" });
       } finally {
         if (!cancelled) {
           setLoading(false);
@@ -619,6 +625,9 @@ const RecommendationPage = () => {
     if (Object.keys(validationErrors).length > 0) {
       setFieldErrors(validationErrors);
       setError("Please correct the highlighted fields and try again.");
+      showWarningToast("Please correct the highlighted fields and try again.", {
+        id: "recommendations-validation-error",
+      });
       return;
     }
 

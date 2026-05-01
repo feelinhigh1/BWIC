@@ -1,13 +1,13 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 import { APP_ROUTES } from "@/config/routes";
+import { showApiErrorToast, showSuccessToast } from "@/lib/toast";
 import { deleteCategory, getCategories } from "@/modules/categories/api";
 import type { CategorySummary } from "@/modules/categories/types";
 import {
   Building2,
   Eye,
-  Home,
-  Map,
   Pencil,
   Plus,
   Shapes,
@@ -28,25 +28,8 @@ const formatDisplayName = (value: string): string =>
     )
     .join(" ");
 
-const normalizeCategoryName = (value: string): string =>
-  value.trim().toLowerCase();
-
 const formatCategoryReference = (id: number): string =>
   `CAT-${String(id).padStart(3, "0")}`;
-
-const getCategoryIcon = (name: string): LucideIcon => {
-  const normalized = normalizeCategoryName(name);
-
-  if (normalized === "home" || normalized.includes("home")) {
-    return Home;
-  }
-
-  if (normalized === "land" || normalized.includes("land")) {
-    return Map;
-  }
-
-  return Building2;
-};
 
 const statCardBaseClassName =
   "rounded-[1.75rem] bg-white px-6 py-6 shadow-[0_24px_70px_rgba(93,105,155,0.08)] ring-1 ring-[#edf1ff] sm:px-7 sm:py-7";
@@ -120,10 +103,7 @@ function TableSkeleton() {
                   <div className="h-5 w-24 animate-pulse rounded-full bg-[#eef1ff]" />
                 </td>
                 <td className="px-6 py-7 sm:px-8">
-                  <div className="flex items-center gap-4">
-                    <div className="h-14 w-14 animate-pulse rounded-2xl bg-[#e3eaff]" />
-                    <div className="h-5 w-40 animate-pulse rounded-full bg-[#eef1ff]" />
-                  </div>
+                  <div className="h-5 w-40 animate-pulse rounded-full bg-[#eef1ff]" />
                 </td>
                 <td className="px-6 py-7 sm:px-8">
                   <div className="h-9 w-32 animate-pulse rounded-full bg-[#dce5ff]" />
@@ -149,11 +129,9 @@ export default function CategoriesTable() {
   const [categories, setCategories] = useState<CategorySummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
-  const [feedbackTone, setFeedbackTone] = useState<"success" | "error">(
-    "success",
-  );
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [pendingDeleteCategory, setPendingDeleteCategory] =
+    useState<CategorySummary | null>(null);
 
   const fetchCategories = useCallback(async () => {
     setLoading(true);
@@ -168,6 +146,11 @@ export default function CategoriesTable() {
       setCategories(sortedCategories);
     } catch (error) {
       console.error("Failed to fetch categories:", error);
+      showApiErrorToast(
+        error,
+        "Unable to load categories right now. Please make sure the backend is running and try again.",
+        { id: "categories-load-error" },
+      );
       setErrorMessage(
         "Unable to load categories right now. Please make sure the backend is running and try again.",
       );
@@ -202,31 +185,25 @@ export default function CategoriesTable() {
     void router.push(APP_ROUTES.adminCreateCategory);
   };
 
-  const handleDeleteCategory = async (category: CategorySummary) => {
-    const confirmed = window.confirm(
-      "Are you sure you want to delete this category?",
-    );
-
-    if (!confirmed) {
+  const handleDeleteCategory = async () => {
+    if (!pendingDeleteCategory) {
       return;
     }
 
-    setDeletingId(category.id);
-    setFeedbackMessage(null);
+    setDeletingId(pendingDeleteCategory.id);
 
     try {
-      await deleteCategory(category.id);
+      await deleteCategory(pendingDeleteCategory.id);
       setCategories((previous) =>
-        previous.filter((item) => item.id !== category.id),
+        previous.filter((item) => item.id !== pendingDeleteCategory.id),
       );
-      setFeedbackTone("success");
-      setFeedbackMessage(
-        `${formatDisplayName(category.name)} was deleted successfully.`,
-      );
+      setPendingDeleteCategory(null);
+      showSuccessToast("Category deleted successfully.");
     } catch (error) {
       console.error("Error deleting category:", error);
-      setFeedbackTone("error");
-      setFeedbackMessage("Failed to delete category. Please try again.");
+      showApiErrorToast(error, "Failed to delete category. Please try again.", {
+        id: "category-delete-error",
+      });
     } finally {
       setDeletingId(null);
     }
@@ -277,19 +254,6 @@ export default function CategoriesTable() {
             </>
           )}
         </div>
-
-        {feedbackMessage ? (
-          <div
-            className={`mt-6 rounded-2xl px-5 py-4 text-sm font-medium shadow-[0_16px_40px_rgba(80,90,143,0.08)] ring-1 ${
-              feedbackTone === "success"
-                ? "bg-[#edf8f0] text-[#166534] ring-[#cdeed7]"
-                : "bg-[#fff1f1] text-[#b42318] ring-[#ffd2d2]"
-            }`}
-          >
-            {feedbackMessage}
-          </div>
-        ) : null}
-
         <div className="mt-8">
           {loading ? (
             <TableSkeleton />
@@ -344,7 +308,6 @@ export default function CategoriesTable() {
                     </thead>
                     <tbody className="divide-y divide-[#eef2ff]">
                       {categories.map((category) => {
-                        const CategoryIcon = getCategoryIcon(category.name);
                         const isDeleting = deletingId === category.id;
 
                         return (
@@ -357,14 +320,9 @@ export default function CategoriesTable() {
                               {formatCategoryReference(category.id)}
                             </td>
                             <td className="px-6 py-7 sm:px-8">
-                              <div className="flex items-center gap-4">
-                                <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#dfe7ff] text-[#0b4fd6]">
-                                  <CategoryIcon className="h-6 w-6" />
-                                </span>
-                                <span className="text-lg font-semibold text-[#141d34] sm:text-xl">
-                                  {formatDisplayName(category.name)}
-                                </span>
-                              </div>
+                              <span className="text-lg font-semibold text-[#141d34] sm:text-xl">
+                                {formatDisplayName(category.name)}
+                              </span>
                             </td>
                             <td className="px-6 py-7 sm:px-8">
                               <span className="inline-flex rounded-full bg-[#d9e3ff] px-4 py-2 text-sm font-semibold text-[#0b4fd6]">
@@ -402,7 +360,7 @@ export default function CategoriesTable() {
                                   type="button"
                                   onClick={(event) => {
                                     event.stopPropagation();
-                                    void handleDeleteCategory(category);
+                                    setPendingDeleteCategory(category);
                                   }}
                                   aria-label={`Delete ${formatDisplayName(category.name)}`}
                                   disabled={isDeleting}
@@ -427,6 +385,33 @@ export default function CategoriesTable() {
           )}
         </div>
       </div>
+
+      <ConfirmModal
+        isOpen={Boolean(pendingDeleteCategory)}
+        onClose={() => {
+          if (deletingId === null) {
+            setPendingDeleteCategory(null);
+          }
+        }}
+        onConfirm={() => void handleDeleteCategory()}
+        loading={deletingId !== null}
+        loadingLabel="Deleting..."
+        confirmLabel="Delete"
+        icon={<Trash2 className="h-14 w-14" />}
+        title="Delete Category?"
+        description={
+          pendingDeleteCategory ? (
+            <>
+              You are about to permanently delete the{" "}
+              <span className="font-semibold text-[#11182d]">
+                “{formatDisplayName(pendingDeleteCategory.name)}”
+              </span>{" "}
+              category. This action cannot be undone and may affect associated
+              properties within the portfolio.
+            </>
+          ) : undefined
+        }
+      />
     </div>
   );
 }

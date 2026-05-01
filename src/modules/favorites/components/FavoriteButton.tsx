@@ -4,6 +4,11 @@ import AuthRequiredModal from "@/components/AuthRequiredModal";
 import { useAuth } from "@/hooks/useAuth";
 import { getApiErrorMessage } from "@/lib/api/errors";
 import {
+  showErrorToast,
+  showInfoToast,
+  showSuccessToast,
+} from "@/lib/toast";
+import {
   addFavorite,
   checkFavoriteStatus,
   removeFavorite,
@@ -97,12 +102,17 @@ const FavoriteButton = ({
     }
 
     if (!isAuthenticated) {
+      showInfoToast("Please log in to add properties to favourites.", {
+        id: "favorite-login-required",
+      });
       setIsAuthModalOpen(true);
       return;
     }
 
     if (!Number.isFinite(numericPropertyId) || numericPropertyId <= 0) {
-      setError("This property could not be found.");
+      const errorMessage = "This property could not be found.";
+      setError(errorMessage);
+      showErrorToast(errorMessage, { id: "favorite-invalid-property" });
       return;
     }
 
@@ -118,10 +128,20 @@ const FavoriteButton = ({
 
       setIsFavorited(status.isFavorited);
       onChange?.(status.isFavorited);
+      showSuccessToast(
+        status.isFavorited
+          ? "Property added to favourites."
+          : "Property removed from favourites.",
+      );
     } catch (toggleError) {
       console.error("Failed to update favorite:", toggleError);
       setIsFavorited(!nextValue);
-      setError(getApiErrorMessage(toggleError, "Could not update favorite."));
+      const errorMessage = getApiErrorMessage(
+        toggleError,
+        "Could not update favorite.",
+      );
+      setError(errorMessage);
+      showErrorToast(errorMessage, { id: "favorite-update-error" });
     } finally {
       setIsSaving(false);
     }

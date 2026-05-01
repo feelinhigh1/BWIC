@@ -11,6 +11,8 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { APP_ROUTES } from "@/config/routes";
 import { useAuth } from "@/hooks/useAuth";
+import { getApiErrorMessage } from "@/lib/api/errors";
+import { showApiErrorToast, showSuccessToast } from "@/lib/toast";
 import { defaultBrand } from "@/utils/brand";
 
 interface NavbarProps {
@@ -38,10 +40,17 @@ const Navbar: React.FC<NavbarProps> = ({
       : pathname === path || pathname.startsWith(`${path}/`);
 
   const handleLogout = async () => {
-    await logout();
-    setIsMenuOpen(false);
-    setIsProfileOpen(false);
-    await router.push(APP_ROUTES.home);
+    try {
+      await logout();
+      showSuccessToast("Logged out successfully.");
+      setIsMenuOpen(false);
+      setIsProfileOpen(false);
+      await router.push(APP_ROUTES.home);
+    } catch (logoutError) {
+      showApiErrorToast(logoutError, "Unable to log out right now.", {
+        id: "user-logout-error",
+      });
+    }
   };
 
   useEffect(() => {

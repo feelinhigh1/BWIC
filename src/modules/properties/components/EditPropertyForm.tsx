@@ -8,6 +8,7 @@ import {
   getApiErrorMessage,
   getApiFieldErrors,
 } from "@/lib/api/errors";
+import { showApiErrorToast, showSuccessToast } from "@/lib/toast";
 import { getCategories } from "@/modules/categories/api";
 import { getLocationSuggestions } from "@/modules/locations/api";
 import { getProperty, updateProperty } from "@/modules/properties/api";
@@ -156,6 +157,9 @@ const EditPropertyForm: React.FC = () => {
       } catch (error) {
         console.error("Error loading property:", error);
         if (isMounted) {
+          showApiErrorToast(error, "We couldn't load this property right now.", {
+            id: "property-load-error",
+          });
           setLoadError("We couldn't load this property right now.");
         }
       } finally {
@@ -363,10 +367,7 @@ const EditPropertyForm: React.FC = () => {
 
     try {
       await updateProperty(String(id), formData);
-      setFormMessage({
-        tone: "success",
-        text: PROPERTY_FORM_MESSAGES.editSuccess,
-      });
+      showSuccessToast("Property updated successfully.");
       await router.push(APP_ROUTES.adminProperties);
     } catch (error) {
       console.error(error);
@@ -374,6 +375,9 @@ const EditPropertyForm: React.FC = () => {
         ...previous,
         ...getApiFieldErrors(error),
       }));
+      showApiErrorToast(error, PROPERTY_FORM_MESSAGES.editError, {
+        id: "property-update-error",
+      });
       setFormMessage({
         tone: "error",
         text: getApiErrorMessage(error, PROPERTY_FORM_MESSAGES.editError),

@@ -11,6 +11,11 @@ import { APP_ROUTES } from "@/config/routes";
 import { sendJson } from "@/lib/api/client";
 import { API_ENDPOINTS } from "@/lib/api/routes";
 import {
+  showErrorToast,
+  showSuccessToast,
+  showWarningToast,
+} from "@/lib/toast";
+import {
   CONTACT_EMAIL_PATTERN,
   CONTACT_FORM_INITIAL_VALUES,
   CONTACT_FORM_MESSAGES,
@@ -116,17 +121,23 @@ function ContactSection() {
       formData;
 
     if (!name.trim() || !email.trim() || !investmentRange || !propertyType) {
-      alert(CONTACT_FORM_MESSAGES.requiredFields);
+      showWarningToast(CONTACT_FORM_MESSAGES.requiredFields, {
+        id: "contact-required-fields",
+      });
       return;
     }
 
     if (!CONTACT_EMAIL_PATTERN.test(email)) {
-      alert(CONTACT_FORM_MESSAGES.invalidEmail);
+      showWarningToast(CONTACT_FORM_MESSAGES.invalidEmail, {
+        id: "contact-invalid-email",
+      });
       return;
     }
 
     if (phone && !CONTACT_PHONE_PATTERN.test(phone)) {
-      alert(CONTACT_FORM_MESSAGES.invalidPhone);
+      showWarningToast(CONTACT_FORM_MESSAGES.invalidPhone, {
+        id: "contact-invalid-phone",
+      });
       return;
     }
 
@@ -145,15 +156,18 @@ function ContactSection() {
         },
       });
 
-      alert(CONTACT_FORM_MESSAGES.success);
+      showSuccessToast(CONTACT_FORM_MESSAGES.success);
       setFormData(createInitialContactFormData());
     } catch (error) {
-      const message =
+      const errorMessage =
         error instanceof Error
           ? error.message
           : CONTACT_FORM_MESSAGES.defaultError;
 
-      alert(`${CONTACT_FORM_MESSAGES.failurePrefix} ${message}`);
+      showErrorToast(
+        `${CONTACT_FORM_MESSAGES.failurePrefix} ${errorMessage}`,
+        { id: "contact-submit-error" },
+      );
     } finally {
       setIsSubmitting(false);
     }

@@ -4,6 +4,12 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { ShieldCheck } from "lucide-react";
 import { APP_ROUTES } from "@/config/routes";
 import { getApiErrorMessage, getApiFieldErrors } from "@/lib/api/errors";
+import {
+  showErrorToast,
+  showInfoToast,
+  showSuccessToast,
+  showWarningToast,
+} from "@/lib/toast";
 import { resendOtp, verifyEmail } from "@/modules/auth/api";
 import RecoveryShell from "@/modules/auth/components/RecoveryShell";
 import {
@@ -44,7 +50,6 @@ export default function VerifyEmailPage() {
   const [remainingSeconds, setRemainingSeconds] = useState(0);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState("");
-  const [statusMessage, setStatusMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isResending, setIsResending] = useState(false);
 
@@ -116,12 +121,14 @@ export default function VerifyEmailPage() {
     if (Object.keys(validationErrors).length > 0) {
       setFieldErrors(validationErrors);
       setError("Please correct the highlighted fields and try again.");
+      showWarningToast("Please correct the highlighted fields and try again.", {
+        id: "verify-email-validation",
+      });
       return;
     }
 
     setFieldErrors({});
     setError("");
-    setStatusMessage("");
     setIsSubmitting(true);
 
     try {
@@ -132,7 +139,7 @@ export default function VerifyEmailPage() {
       });
 
       clearEmailVerificationState();
-      setStatusMessage("Email verified successfully. Redirecting to login...");
+      showSuccessToast("Email verified successfully.");
       await router.replace(
         `${APP_ROUTES.login}?email=${encodeURIComponent(
           normalizedEmail,
@@ -140,12 +147,12 @@ export default function VerifyEmailPage() {
       );
     } catch (verificationError) {
       setFieldErrors(getApiFieldErrors(verificationError));
-      setError(
-        getApiErrorMessage(
-          verificationError,
-          "Unable to verify your email right now.",
-        ),
+      const errorMessage = getApiErrorMessage(
+        verificationError,
+        "Unable to verify your email right now.",
       );
+      setError(errorMessage);
+      showErrorToast(errorMessage, { id: "verify-email-error" });
     } finally {
       setIsSubmitting(false);
     }
@@ -164,6 +171,9 @@ export default function VerifyEmailPage() {
     if (validationErrors.email) {
       setFieldErrors({ email: validationErrors.email });
       setError(validationErrors.email);
+      showWarningToast(validationErrors.email, {
+        id: "verify-email-resend-validation",
+      });
       return;
     }
 
@@ -177,7 +187,6 @@ export default function VerifyEmailPage() {
       return next;
     });
     setError("");
-    setStatusMessage("");
     setIsResending(true);
 
     try {
@@ -193,11 +202,14 @@ export default function VerifyEmailPage() {
       setSentAt(nextSentAt);
       setCooldownSeconds(response.resendCooldownSeconds);
       setOtp("");
-      setStatusMessage("A fresh verification code has been sent to your email.");
+      showInfoToast("A fresh verification code has been sent to your email.");
     } catch (resendError) {
-      setError(
-        getApiErrorMessage(resendError, "Unable to resend the OTP right now."),
+      const errorMessage = getApiErrorMessage(
+        resendError,
+        "Unable to resend the OTP right now.",
       );
+      setError(errorMessage);
+      showErrorToast(errorMessage, { id: "verify-email-resend-error" });
     } finally {
       setIsResending(false);
     }
@@ -221,15 +233,11 @@ export default function VerifyEmailPage() {
             {maskedEmail ? ` (${maskedEmail})` : ""}.
           </p>
 
-          {(error || statusMessage) && (
+          {error && (
             <div
-              className={`mx-auto mt-8 max-w-xl rounded-[18px] px-4 py-3 text-sm ${
-                error
-                  ? "border border-[#ffdad6] bg-[#fff1ef] text-[#93000a]"
-                  : "border border-[#dbe1ff] bg-[#eef0ff] text-[#004ac6]"
-              }`}
+              className="mx-auto mt-8 max-w-xl rounded-[18px] border border-[#ffdad6] bg-[#fff1ef] px-4 py-3 text-sm text-[#93000a]"
             >
-              {error || statusMessage}
+              {error}
             </div>
           )}
 
