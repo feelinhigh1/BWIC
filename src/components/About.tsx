@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ArrowRight, Eye, Rocket } from "lucide-react";
+import AppImage from "@/components/ui/AppImage";
 import { APP_ROUTES } from "@/config/routes";
 import {
   highlightItems,
@@ -19,9 +20,12 @@ function AboutPage() {
     <div className="bg-[#faf8ff] text-[#131b2e] font-auth-body selection:bg-[#dbe1ff] selection:text-[#00174b]">
       <section className="relative flex min-h-[620px] items-center overflow-hidden px-6 py-20 sm:px-8 lg:min-h-[760px] lg:px-10">
         <div className="absolute inset-0">
-          <img
+          <AppImage
             src={ABOUT_HERO_BACKGROUND_IMAGE}
             alt="High-end modern architectural building in Nepal with Himalayan mountains in the background."
+            fill
+            priority
+            sizes="100vw"
             className="h-full w-full object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-r from-[#131b2e]/85 via-[#131b2e]/50 to-[#131b2e]/10" />
@@ -136,11 +140,12 @@ function AboutPage() {
             {leadershipTeam.map((member) => (
               <article key={member.name} className="group">
                 <div className="relative mb-6 aspect-[3/4] overflow-hidden rounded-[24px]">
-                  <img
+                  <AppImage
                     src={member.image}
                     alt={member.alt}
+                    fill
+                    sizes="(min-width: 1280px) 20vw, (min-width: 768px) 35vw, 90vw"
                     className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-                    loading="lazy"
                   />
                   <div className="absolute inset-x-4 bottom-4 rounded-2xl bg-white/88 p-4 shadow-lg backdrop-blur transition md:translate-y-4 md:opacity-0 md:group-hover:translate-y-0 md:group-hover:opacity-100">
                     <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-[#004ac6]">

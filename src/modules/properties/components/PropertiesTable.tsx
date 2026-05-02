@@ -14,6 +14,7 @@ import {
   Search,
   Trash2,
 } from "lucide-react";
+import AppImage from "@/components/ui/AppImage";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 import { APP_ROUTES } from "@/config/routes";
 import { assetUrl } from "@/lib/api/client";
@@ -591,11 +592,13 @@ export default function PropertiesTable() {
                       >
                         <td className="px-5 py-5 sm:px-8">
                           <div className="flex min-w-[290px] items-center gap-5">
-                            <div className="h-20 w-20 flex-shrink-0 overflow-hidden rounded-2xl bg-[#e7ebff]">
+                            <div className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-2xl bg-[#e7ebff]">
                               {primaryImage ? (
-                                <img
+                                <AppImage
                                   src={assetUrl(primaryImage)}
                                   alt={property.title}
+                                  fill
+                                  sizes="80px"
                                   className="h-full w-full object-cover transition duration-500 group-hover:scale-110"
                                 />
                               ) : (

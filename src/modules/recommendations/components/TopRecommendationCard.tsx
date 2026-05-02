@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { CheckCircle2, CircleAlert } from "lucide-react";
+import AppImage from "@/components/ui/AppImage";
 import { assetUrl } from "@/lib/api/client";
 import FavoriteButton from "@/modules/favorites/components/FavoriteButton";
 import { formatPropertyReference } from "@/modules/properties/reference";
@@ -85,9 +86,11 @@ const TopRecommendationCard = ({
       <div className="grid xl:grid-cols-[1.2fr_0.8fr]">
         <div className="relative min-h-[320px] overflow-hidden bg-[#dde4ff] xl:min-h-[440px]">
           {image ? (
-            <img
+            <AppImage
               src={assetUrl(image)}
               alt={item.property.title}
+              fill
+              sizes="(min-width: 1280px) 40vw, 100vw"
               className="h-full w-full object-cover"
             />
           ) : (

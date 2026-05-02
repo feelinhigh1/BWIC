@@ -8,6 +8,7 @@ import {
   SearchX,
   SlidersHorizontal,
 } from "lucide-react";
+import AppImage from "@/components/ui/AppImage";
 import { capitalize } from "@/utils/Capitalize";
 import { APP_ROUTES } from "@/config/routes";
 import { assetUrl } from "@/lib/api/client";
@@ -746,9 +747,11 @@ const Properties = () => {
                 >
                   <div className="relative h-[214px] overflow-hidden bg-[#dfe5ff]">
                     {primaryImage ? (
-                      <img
+                      <AppImage
                         src={assetUrl(primaryImage)}
                         alt={property.title}
+                        fill
+                        sizes="(min-width: 1280px) 24vw, (min-width: 768px) 45vw, 100vw"
                         className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
                       />
                     ) : (

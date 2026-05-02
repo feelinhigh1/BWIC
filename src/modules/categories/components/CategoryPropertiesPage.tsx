@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { Trash2 } from "lucide-react";
 import ConfirmModal from "@/components/ui/ConfirmModal";
@@ -29,11 +29,11 @@ export default function CategoryPropertiesPage() {
   const [pendingDeleteRow, setPendingDeleteRow] =
     useState<PropertyTableRow | null>(null);
 
-  useEffect(() => {
-    if (id) fetchCategoryProperties();
-  }, [id]);
+  const fetchCategoryProperties = useCallback(async () => {
+    if (!id) {
+      return;
+    }
 
-  const fetchCategoryProperties = async () => {
     try {
       const [data, propertiesPayload] = await Promise.all([
         getCategory(String(id)),
@@ -56,7 +56,11 @@ export default function CategoryPropertiesPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
+
+  useEffect(() => {
+    void fetchCategoryProperties();
+  }, [fetchCategoryProperties]);
 
   const handleRowClick = (row: PropertyTableRow) =>
     console.log("Property clicked:", row);

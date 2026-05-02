@@ -93,6 +93,12 @@ export default function ResetPasswordPage() {
     setTokenStatus("checking");
     setTokenMessage("Validating your reset link...");
 
+    // Remove the token from the address bar as soon as we have captured it.
+    if (typeof window !== "undefined" && window.location.search) {
+      const sanitizedUrl = `${window.location.pathname}${window.location.hash}`;
+      window.history.replaceState(window.history.state, document.title, sanitizedUrl);
+    }
+
     void validateResetToken(tokenParam)
       .then((response) => {
         if (!isActive) {

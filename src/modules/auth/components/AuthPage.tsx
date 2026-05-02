@@ -111,7 +111,7 @@ export default function AuthPage({
       submitLabel: "Login to Portal",
       footer: isAdminLogin ? null : (
         <p className="text-sm text-[#434655]">
-          Don't have an account?
+          Don&apos;t have an account?
           <Link
             href={APP_ROUTES.register}
             className="ml-1 font-semibold text-[#004ac6] hover:underline"

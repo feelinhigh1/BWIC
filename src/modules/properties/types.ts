@@ -27,7 +27,7 @@ export interface PropertySummary {
   updatedAt?: string;
 }
 
-export interface PropertyDetail extends PropertySummary {}
+export type PropertyDetail = PropertySummary;
 
 export type Property = PropertySummary;
 

@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
+import AppImage from "@/components/ui/AppImage";
 import { APP_ROUTES } from "@/config/routes";
 import { defaultBrand } from "@/utils/brand";
 
@@ -30,9 +31,11 @@ export default function BrandLogo({
 
   const content = (
     <>
-      <img
+      <AppImage
         src={defaultBrand.logo ?? "/images/logo.png"}
         alt={`${defaultBrand.name} logo`}
+        width={160}
+        height={64}
         className={imageClassName}
       />
       {caption ? <div className={captionClassName}>{caption}</div> : null}

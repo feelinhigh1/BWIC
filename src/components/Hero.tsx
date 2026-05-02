@@ -1,5 +1,6 @@
 import Link from "next/link";
 import React from "react";
+import AppImage from "@/components/ui/AppImage";
 import { APP_ROUTES } from "@/config/routes";
 
 const HERO_BACKGROUND_IMAGE = "/images/hero_section.png";
@@ -12,9 +13,12 @@ const HeroSection: React.FC = () => {
     >
       <div className="relative min-h-[720px] sm:min-h-[780px] lg:min-h-[921px]">
         <div className="absolute inset-0">
-          <img
+          <AppImage
             src={HERO_BACKGROUND_IMAGE}
             alt=""
+            fill
+            priority
+            sizes="100vw"
             aria-hidden="true"
             className="h-full w-full object-cover object-center"
           />

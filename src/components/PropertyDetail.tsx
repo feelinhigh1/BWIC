@@ -19,6 +19,7 @@ import {
   Ruler,
   Waypoints,
 } from "lucide-react";
+import AppImage from "@/components/ui/AppImage";
 import { APP_ROUTES } from "@/config/routes";
 import { assetUrl } from "@/lib/api/client";
 import FavoriteButton from "@/modules/favorites/components/FavoriteButton";
@@ -397,9 +398,11 @@ const PropertyDetail = () => {
               ref={imageRef}
               className="relative aspect-[4/3] bg-[#131b2e] sm:aspect-[16/10] lg:aspect-[16/9]"
             >
-              <img
+              <AppImage
                 src={activeImage}
                 alt={property.title}
+                fill
+                sizes="(min-width: 1024px) 75vw, 100vw"
                 onError={handleImageError}
                 className="h-full w-full object-cover"
               />
@@ -472,15 +475,17 @@ const PropertyDetail = () => {
                     key={`${image}-${index}`}
                     type="button"
                     onClick={() => setSelectedImage(index)}
-                    className={`h-16 w-24 shrink-0 overflow-hidden rounded-[10px] border-2 transition ${
+                    className={`relative h-16 w-24 shrink-0 overflow-hidden rounded-[10px] border-2 transition ${
                       index === selectedImage
                         ? "border-[#0b46cf] shadow-[0_10px_20px_rgba(11,70,207,0.12)]"
                         : "border-transparent opacity-70 hover:border-[#c9843a] hover:opacity-100"
                     }`}
                   >
-                    <img
+                    <AppImage
                       src={resolveImageSrc(image)}
                       alt={`${property.title} image ${index + 1}`}
+                      fill
+                      sizes="96px"
                       onError={handleImageError}
                       className="h-full w-full object-cover"
                     />

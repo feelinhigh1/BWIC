@@ -9,9 +9,9 @@ import {
   faGear,
   faHeart,
 } from "@fortawesome/free-solid-svg-icons";
+import AppImage from "@/components/ui/AppImage";
 import { APP_ROUTES } from "@/config/routes";
 import { useAuth } from "@/hooks/useAuth";
-import { getApiErrorMessage } from "@/lib/api/errors";
 import { showApiErrorToast, showSuccessToast } from "@/lib/toast";
 import { defaultBrand } from "@/utils/brand";
 
@@ -74,9 +74,11 @@ const Navbar: React.FC<NavbarProps> = ({
           <div className="flex items-center space-x-2">
             <Link href={APP_ROUTES.home}>
               {brand.logo ? (
-                <img
+                <AppImage
                   src={brand.logo}
                   alt={`${brand.name} logo`}
+                  width={176}
+                  height={44}
                   className="h-11 w-auto object-contain"
                 />
               ) : (

@@ -1,4 +1,3 @@
-import Link from "next/link";
 import {
   ChevronDown,
   Mail,
@@ -7,7 +6,6 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useState, type ChangeEvent, type FormEvent } from "react";
-import { APP_ROUTES } from "@/config/routes";
 import { sendJson } from "@/lib/api/client";
 import { API_ENDPOINTS } from "@/lib/api/routes";
 import {
@@ -34,8 +32,6 @@ const createInitialContactFormData = () => ({
   ...CONTACT_FORM_INITIAL_VALUES,
 });
 
-const headquartersAddress = `${contactInfo.address.street}, ${contactInfo.address.city}, ${contactInfo.address.country}`;
-
 const contactMethods: Array<{
   title: string;
   detail: string;
@@ -59,24 +55,6 @@ const contactMethods: Array<{
     detail: contactInfo.address.street,
     supporting: `${contactInfo.address.city}, ${contactInfo.address.country}`,
     icon: MapPin,
-  },
-];
-
-const faqItems = [
-  {
-    question: "What is the minimum investment?",
-    answer:
-      "Our entry-level investment portfolios start from tailored entry points based on the asset class, while larger commercial and land opportunities are structured for higher-capital allocations.",
-  },
-  {
-    question: "Is legal assistance provided?",
-    answer:
-      "Yes. Every Blue Whale engagement includes legal due diligence, document review, and transaction support to help protect your capital throughout the acquisition process.",
-  },
-  {
-    question: "How often are portfolio reports shared?",
-    answer:
-      "We provide regular portfolio updates and performance reporting, with timing adjusted to the investment structure and the level of management support you choose.",
   },
 ];
 

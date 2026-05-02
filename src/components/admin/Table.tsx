@@ -8,7 +8,7 @@ interface TableProps<T> {
   hiddenColumns?: string[];
 }
 
-export default function Table<T extends Record<string, any>>({
+export default function Table<T extends object>({
   data,
   onRowClick,
   onEdit,
@@ -67,9 +67,12 @@ export default function Table<T extends Record<string, any>>({
                   key={header}
                   className="px-6 py-3 text-center text-gray-800 whitespace-nowrap text-sm"
                 >
-                  {typeof row[header] === "object"
-                    ? JSON.stringify(row[header])
-                    : String(row[header])}
+                  {(() => {
+                    const cellValue = (row as Record<string, unknown>)[header];
+                    return typeof cellValue === "object"
+                      ? JSON.stringify(cellValue)
+                      : String(cellValue);
+                  })()}
                 </td>
               ))}
               <td className="px-6 py-3 text-center whitespace-nowrap">

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
 import { APP_ROUTES } from "@/config/routes";
 import { assetUrl } from "@/lib/api/client";
@@ -312,7 +312,7 @@ const EditPropertyForm: React.FC = () => {
     setFormMessage(null);
   };
 
-  const removeImage = (index: number, isExisting = false) => {
+  const removeImage = useCallback((index: number, isExisting = false) => {
     setFormData((previous) => {
       if (isExisting) {
         const updatedExistingImages = [...(previous.existingImages || [])];
@@ -336,7 +336,7 @@ const EditPropertyForm: React.FC = () => {
       updatedPreviews.splice(previewIndex, 1);
       return updatedPreviews;
     });
-  };
+  }, [formData.existingImages]);
 
   const validate = () => {
     const nextErrors = validatePropertyForm(formData, {
@@ -402,7 +402,7 @@ const EditPropertyForm: React.FC = () => {
         onRemove: () => removeImage(sourceIndex, isExisting),
       };
     });
-  }, [formData.existingImages, previews]);
+  }, [formData.existingImages, previews, removeImage]);
 
   if (loading) {
     return (

@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { MapPin } from "lucide-react";
+import AppImage from "@/components/ui/AppImage";
 import { assetUrl } from "@/lib/api/client";
 import FavoriteButton from "@/modules/favorites/components/FavoriteButton";
 import {
@@ -126,9 +127,11 @@ const RecommendationHero = ({
         <div className="overflow-hidden rounded-lg border border-[#d9def0] bg-[#dbe1ff] shadow-[0_26px_70px_rgba(19,27,46,0.12)]">
           <div className="relative h-[320px] sm:h-[420px] lg:h-[500px]">
             {activeImage ? (
-              <img
+              <AppImage
                 src={assetUrl(activeImage)}
                 alt={property.title}
+                fill
+                sizes="(min-width: 1024px) 42vw, 100vw"
                 className="h-full w-full object-cover"
               />
             ) : (
@@ -150,15 +153,17 @@ const RecommendationHero = ({
                   key={image}
                   type="button"
                   onClick={() => setSelectedImage(index)}
-                  className={`h-16 w-20 shrink-0 overflow-hidden rounded border transition ${
+                  className={`relative h-16 w-20 shrink-0 overflow-hidden rounded border transition ${
                     selectedImage === index
                       ? "border-[#004ac6]"
                       : "border-[#d9def0] hover:border-[#9badde]"
                   }`}
                 >
-                  <img
+                  <AppImage
                     src={assetUrl(image)}
                     alt={`${property.title} image ${index + 1}`}
+                    fill
+                    sizes="80px"
                     className="h-full w-full object-cover"
                   />
                 </button>

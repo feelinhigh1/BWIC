@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
+import AppImage from "@/components/ui/AppImage";
 import { assetUrl } from "@/lib/api/client";
 import FavoriteButton from "@/modules/favorites/components/FavoriteButton";
 import { formatRecommendationCurrency } from "@/modules/recommendations/formatters";
@@ -50,9 +51,11 @@ const RecommendationCard = ({ item, rank }: RecommendationCardProps) => {
     <article className="overflow-hidden rounded-[24px] border border-[#dde3f5] bg-white shadow-[0_22px_60px_rgba(19,27,46,0.06)] transition-transform duration-300 hover:-translate-y-1 hover:shadow-[0_28px_70px_rgba(19,27,46,0.1)]">
       <div className="relative h-56 overflow-hidden bg-[radial-gradient(circle_at_top,#13325c_0%,#0b1120_65%,#070b15_100%)]">
         {image ? (
-          <img
+          <AppImage
             src={assetUrl(image)}
             alt={item.property.title}
+            fill
+            sizes="(min-width: 1280px) 22vw, (min-width: 768px) 46vw, 100vw"
             className="h-full w-full object-cover"
           />
         ) : (

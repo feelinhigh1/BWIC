@@ -481,6 +481,8 @@ const RecommendationPage = () => {
     hasGenerated,
     hasHydrated,
     lastCompletedRequestKey,
+    pagination.limit,
+    pagination.page,
     requestKey,
     setResults,
   ]);
@@ -711,9 +713,8 @@ const RecommendationPage = () => {
               className={`${formFieldClassName} min-h-[140px] resize-y`}
             />
             <p className="font-auth-body text-sm text-[#5b6275]">
-              Press Enter to generate recommendations, or use Shift+Enter for a
-              new line. Structured inputs override parsed brief values when they
-              overlap.
+              Press Enter to generate recommendations. Structured inputs
+              override parsed brief values when they overlap.
             </p>
           </div>
 

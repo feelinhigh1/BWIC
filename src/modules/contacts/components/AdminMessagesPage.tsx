@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { ChevronRight, Filter, Inbox, RefreshCw, Search } from "lucide-react";
+import { Filter, Inbox, Search } from "lucide-react";
 import { APP_ROUTES } from "@/config/routes";
 import { getContactMessages } from "@/modules/contacts/api";
 import {
@@ -22,18 +22,10 @@ export default function AdminMessagesPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [propertyFilter, setPropertyFilter] = useState("");
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const fetchMessages = async (options?: { silent?: boolean }) => {
-    const silent = options?.silent ?? false;
-
-    if (silent) {
-      setRefreshing(true);
-    } else {
-      setLoading(true);
-    }
-
+  const fetchMessages = async () => {
+    setLoading(true);
     setErrorMsg(null);
 
     try {
@@ -54,7 +46,6 @@ export default function AdminMessagesPage() {
       );
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
   };
 
@@ -166,7 +157,7 @@ export default function AdminMessagesPage() {
             </div>
           ) : null}
 
-          <div className="mt-6 max-h-[920px] space-y-4 overflow-y-auto pr-1">
+          <div className="mt-6 space-y-4">
             {loading
               ? Array.from({ length: 5 }, (_, index) => (
                   <div

@@ -97,7 +97,7 @@ const RecommendationDetailPage = () => {
       buildRecommendationQueryFromRouteQuery(
         router.query as Record<string, string | string[] | undefined>,
       ),
-    [router.asPath],
+    [router.query],
   );
   const cachedDetail = useMemo<RecommendationDetailData | null>(() => {
     if (!propertyId || !recommendationMeta || !appliedWeights) {

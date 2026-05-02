@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   ArrowLeft,
   CalendarDays,
@@ -28,7 +28,7 @@ export default function AdminMessageDetailPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const fetchMessage = async (options?: { silent?: boolean }) => {
+  const fetchMessage = useCallback(async (options?: { silent?: boolean }) => {
     if (!id || Array.isArray(id)) {
       return;
     }
@@ -55,7 +55,7 @@ export default function AdminMessageDetailPage() {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, [id]);
 
   useEffect(() => {
     if (!router.isReady) {
@@ -63,7 +63,7 @@ export default function AdminMessageDetailPage() {
     }
 
     void fetchMessage();
-  }, [router.isReady, id]);
+  }, [fetchMessage, router.isReady]);
 
   if (loading) {
     return (

@@ -14,6 +14,7 @@ import {
   Trash2,
   UploadCloud,
 } from "lucide-react";
+import AppImage from "@/components/ui/AppImage";
 import { APP_ROUTES } from "@/config/routes";
 import {
   PROPERTY_DEFAULT_CATEGORY_OPTION_VALUE,
@@ -564,9 +565,11 @@ export default function PropertyFormScreen({
                       key={image.id}
                       className="group relative h-40 overflow-hidden rounded-[1.35rem] border border-[#dbe3fb] bg-[#eef2ff]"
                     >
-                      <img
+                      <AppImage
                         src={image.src}
                         alt={image.alt}
+                        fill
+                        sizes="(min-width: 640px) 25vw, 50vw"
                         className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
                       />
                       <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(19,27,46,0.02),rgba(19,27,46,0.5))]" />
