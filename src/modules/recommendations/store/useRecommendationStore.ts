@@ -4,6 +4,7 @@ import {
   DEFAULT_RECOMMENDATION_FORM_VALUES,
   DEFAULT_RECOMMENDATION_PAGINATION,
 } from "@/modules/recommendations/constants";
+import { dedupeLocationLabels } from "@/modules/recommendations/location-utils";
 import type { RecommendationWeights } from "@/modules/recommendation-settings/types";
 import type {
   RecommendationItem,
@@ -15,7 +16,7 @@ import type {
 
 type RecommendationRequestIdentity = {
   appliedValues: RecommendationPreferences;
-  appliedPlaceDetails: RecommendationPlaceDetails | null;
+  appliedPlaceDetails: RecommendationPlaceDetails[];
   page: number;
   limit: number;
 };
@@ -79,9 +80,14 @@ export const buildRecommendationRequestKey = ({
     roi: appliedValues.roi.trim(),
     area: appliedValues.area.trim(),
     maxDistanceFromHighway: appliedValues.maxDistanceFromHighway.trim(),
-    placeId: appliedPlaceDetails?.id ?? "",
-    latitude: appliedPlaceDetails?.location.lat ?? null,
-    longitude: appliedPlaceDetails?.location.lng ?? null,
+    locations: dedupeLocationLabels(
+      appliedPlaceDetails.map((place) => place.primaryText),
+    ),
+    coordinates: appliedPlaceDetails.map((place) => ({
+      placeId: place.id,
+      latitude: place.location.lat,
+      longitude: place.location.lng,
+    })),
     page,
     limit,
   });
@@ -90,9 +96,8 @@ export interface RecommendationStoreState {
   documentSessionId: string | null;
   formValues: RecommendationPreferences;
   appliedValues: RecommendationPreferences;
-  selectedPlaceId: string;
-  selectedPlaceDetails: RecommendationPlaceDetails | null;
-  appliedPlaceDetails: RecommendationPlaceDetails | null;
+  selectedPlaceDetails: RecommendationPlaceDetails[];
+  appliedPlaceDetails: RecommendationPlaceDetails[];
   recommendations: RecommendationItem[];
   pagination: RecommendationPagination;
   summary: RecommendationParsedBriefMetadata | null;
@@ -107,14 +112,12 @@ export interface RecommendationStoreState {
     value: RecommendationPreferences[K],
   ) => void;
   setFormValues: (values: Partial<RecommendationPreferences>) => void;
-  setSelectedPlace: (
-    placeId: string,
-    details: RecommendationPlaceDetails | null,
-  ) => void;
-  clearSelectedPlace: () => void;
+  addSelectedPlace: (details: RecommendationPlaceDetails) => void;
+  removeSelectedPlace: (placeId: string) => void;
+  clearSelectedPlaces: () => void;
   applyRecommendationPayload: (payload: {
     appliedValues: RecommendationPreferences;
-    appliedPlaceDetails: RecommendationPlaceDetails | null;
+    appliedPlaceDetails: RecommendationPlaceDetails[];
   }) => void;
   setResults: (payload: {
     recommendations: RecommendationItem[];
@@ -142,9 +145,8 @@ const initialState = {
   documentSessionId: getCurrentDocumentSessionId(),
   formValues: cloneDefaultFormValues(),
   appliedValues: cloneDefaultFormValues(),
-  selectedPlaceId: "",
-  selectedPlaceDetails: null,
-  appliedPlaceDetails: null,
+  selectedPlaceDetails: [] as RecommendationPlaceDetails[],
+  appliedPlaceDetails: [] as RecommendationPlaceDetails[],
   recommendations: [] as RecommendationItem[],
   pagination: cloneDefaultPagination(),
   summary: null as RecommendationParsedBriefMetadata | null,
@@ -174,19 +176,27 @@ export const useRecommendationStore = create<RecommendationStoreState>()(
             ...values,
           },
         })),
-      setSelectedPlace: (placeId, details) =>
+      addSelectedPlace: (details) =>
         set((state) => ({
-          selectedPlaceId: placeId,
-          selectedPlaceDetails: details,
+          selectedPlaceDetails: state.selectedPlaceDetails.some(
+            (place) => place.id === details.id,
+          )
+            ? state.selectedPlaceDetails
+            : [...state.selectedPlaceDetails, details],
           formValues: {
             ...state.formValues,
-            location: details ? details.fullAddress : state.formValues.location,
+            location: "",
           },
         })),
-      clearSelectedPlace: () =>
+      removeSelectedPlace: (placeId) =>
+        set((state) => ({
+          selectedPlaceDetails: state.selectedPlaceDetails.filter(
+            (place) => place.id !== placeId,
+          ),
+        })),
+      clearSelectedPlaces: () =>
         set({
-          selectedPlaceId: "",
-          selectedPlaceDetails: null,
+          selectedPlaceDetails: [],
         }),
       applyRecommendationPayload: ({ appliedValues, appliedPlaceDetails }) =>
         set((state) => ({
@@ -248,13 +258,29 @@ export const useRecommendationStore = create<RecommendationStoreState>()(
     }),
     {
       name: RECOMMENDATION_SESSION_STORAGE_KEY,
+      version: 2,
       skipHydration: true,
       storage: createJSONStorage(() => sessionStorage),
+      migrate: (persistedState) => {
+        const state = persistedState as Partial<RecommendationStoreState> & {
+          selectedPlaceDetails?: RecommendationPlaceDetails[] | null;
+          appliedPlaceDetails?: RecommendationPlaceDetails[] | null;
+        };
+
+        return {
+          ...state,
+          selectedPlaceDetails: Array.isArray(state.selectedPlaceDetails)
+            ? state.selectedPlaceDetails
+            : [],
+          appliedPlaceDetails: Array.isArray(state.appliedPlaceDetails)
+            ? state.appliedPlaceDetails
+            : [],
+        };
+      },
       partialize: (state) => ({
         documentSessionId: getCurrentDocumentSessionId(),
         formValues: state.formValues,
         appliedValues: state.appliedValues,
-        selectedPlaceId: state.selectedPlaceId,
         selectedPlaceDetails: state.selectedPlaceDetails,
         appliedPlaceDetails: state.appliedPlaceDetails,
         recommendations: state.recommendations,

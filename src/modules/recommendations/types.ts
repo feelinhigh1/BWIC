@@ -22,10 +22,16 @@ export interface RecommendationQuery {
   limit?: number;
 }
 
+export interface RecommendationLocationCoordinate {
+  latitude: number;
+  longitude: number;
+}
+
 export interface RecommendationMustHavePayload {
   categoryId?: number;
   category?: string;
   location?: string;
+  locations?: string[];
   maxPrice?: number;
   minRoi?: number;
   minArea?: number;
@@ -37,8 +43,11 @@ export interface RecommendationPreferencesPayload {
   categoryId?: number;
   category?: string;
   location?: string;
+  locations?: string[];
   latitude?: number;
   longitude?: number;
+  coordinates?: RecommendationLocationCoordinate[];
+  placeIds?: string[];
   locationRadiusKm?: number;
   price?: number;
   roi?: number;
@@ -59,7 +68,7 @@ export interface RecommendationDetectedEntity {
     | "preferredArea"
     | "maxDistanceFromHighway"
     | "status";
-  value: string | number;
+  value: string | number | string[];
   raw: string;
 }
 

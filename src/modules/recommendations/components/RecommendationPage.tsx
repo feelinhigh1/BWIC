@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { BarChart3, MapPinned } from "lucide-react";
+import { BarChart3, MapPinned, X } from "lucide-react";
 import { getApiErrorMessage } from "@/lib/api/errors";
 import { showErrorToast, showWarningToast } from "@/lib/toast";
 import {
@@ -21,12 +21,20 @@ import {
   RECOMMENDATION_RANGE_LIMITS,
 } from "@/modules/recommendations/constants";
 import { formatRecommendationCurrency } from "@/modules/recommendations/formatters";
+import {
+  getLocationNamesFromPayload,
+  getNormalizedLocationLabels,
+  hasLocationCriteria,
+} from "@/modules/recommendations/location-utils";
 import type { RecommendationWeights } from "@/modules/recommendation-settings/types";
 import type {
   RecommendationDetectedEntity,
   RecommendationLocationSuggestion,
+  RecommendationMustHavePayload,
   RecommendationParsedBriefMetadata,
+  RecommendationPlaceDetails,
   RecommendationPreferences,
+  RecommendationPreferencesPayload,
 } from "@/modules/recommendations/types";
 import {
   buildRecommendationRequestKey,
@@ -83,51 +91,92 @@ const hasStructuredPreferences = (value: RecommendationPreferences) =>
     Number.parseFloat(value.maxDistanceFromHighway) > 0,
   );
 
-const formatDetectedEntity = (entity: RecommendationDetectedEntity): string => {
+const buildDetectedEntityLabels = (
+  entity: RecommendationDetectedEntity,
+): string[] => {
   switch (entity.type) {
     case "category":
-      return `Category: ${String(entity.value)}`;
+      return [`Category: ${String(entity.value)}`];
     case "location":
-      return `Location: ${String(entity.value)}`;
+      return getNormalizedLocationLabels(entity.value).map(
+        (location) => `Location: ${location}`,
+      );
     case "maxPrice":
-      return `Budget up to ${formatCurrencyValue(Number(entity.value))}`;
+      return [`Budget up to ${formatCurrencyValue(Number(entity.value))}`];
     case "preferredPrice":
-      return `Preferred price ${formatCurrencyValue(Number(entity.value))}`;
+      return [`Preferred price ${formatCurrencyValue(Number(entity.value))}`];
     case "minRoi":
-      return `ROI at least ${formatMetricValue(Number(entity.value), "%")}`;
+      return [`ROI at least ${formatMetricValue(Number(entity.value), "%")}`];
     case "preferredRoi":
-      return `Preferred ROI ${formatMetricValue(Number(entity.value), "%")}`;
+      return [`Preferred ROI ${formatMetricValue(Number(entity.value), "%")}`];
     case "minArea":
-      return `Area at least ${formatMetricValue(Number(entity.value))} sq ft`;
+      return [
+        `Area at least ${formatMetricValue(Number(entity.value))} sq ft`,
+      ];
     case "preferredArea":
-      return `Preferred area ${formatMetricValue(Number(entity.value))} sq ft`;
+      return [
+        `Preferred area ${formatMetricValue(Number(entity.value))} sq ft`,
+      ];
     case "maxDistanceFromHighway":
-      return `Highway distance up to ${formatMetricValue(Number(entity.value))} km`;
+      return [
+        `Highway distance up to ${formatMetricValue(Number(entity.value))} km`,
+      ];
     case "status":
-      return `Status: ${String(entity.value)}`;
+      return [`Status: ${String(entity.value)}`];
     default:
-      return String(entity.value);
+      return [String(entity.value)];
   }
+};
+
+const formatLocationSummary = (
+  locations: string[],
+  singularLabel: string,
+  pluralLabel: string,
+): string | null => {
+  if (locations.length === 0) {
+    return null;
+  }
+
+  return `${
+    locations.length === 1 ? singularLabel : pluralLabel
+  }: ${locations.join(", ")}`;
 };
 
 const buildAppliedSummary = (
   metadata: RecommendationParsedBriefMetadata | null,
+  appliedValues: RecommendationPreferences,
+  appliedPlaceDetails: RecommendationPlaceDetails[],
 ): string[] => {
-  if (!metadata) {
-    return [];
-  }
-
   const summary: string[] = [];
-  const { appliedFilters, appliedPreferences } = metadata;
+  const appliedFilters: RecommendationMustHavePayload =
+    metadata?.appliedFilters ?? {};
+  const appliedPreferences: RecommendationPreferencesPayload =
+    metadata?.appliedPreferences ?? {};
+  const structuredLocations = appliedPlaceDetails.map(
+    (place) => place.primaryText,
+  );
+  const filterLocations = getLocationNamesFromPayload(appliedFilters);
+  const preferenceLocations =
+    structuredLocations.length > 0
+      ? structuredLocations
+      : getLocationNamesFromPayload(appliedPreferences).length > 0
+        ? getLocationNamesFromPayload(appliedPreferences)
+        : getLocationNamesFromPayload({ location: appliedValues.location });
 
   if (appliedFilters.category) {
     summary.push(`Category: ${appliedFilters.category}`);
   }
 
-  if (appliedFilters.location) {
-    summary.push(`Location: ${appliedFilters.location}`);
-  } else if (appliedPreferences.location) {
-    summary.push(`Preferred location: ${appliedPreferences.location}`);
+  const appliedLocationSummary =
+    formatLocationSummary(filterLocations, "Location", "Locations") ??
+    formatLocationSummary(
+      preferenceLocations,
+      "Preferred location",
+      "Preferred locations",
+    );
+
+  if (appliedLocationSummary) {
+    summary.push(appliedLocationSummary);
   }
 
   if (appliedFilters.maxPrice !== undefined) {
@@ -195,23 +244,33 @@ const buildAppliedSummary = (
 const buildInactiveWeightWarnings = (
   metadata: RecommendationParsedBriefMetadata | null,
   appliedWeights: RecommendationWeights | null,
+  appliedValues: RecommendationPreferences,
+  appliedPlaceDetails: RecommendationPlaceDetails[],
 ): string[] => {
-  if (!metadata || !appliedWeights) {
+  if (!appliedWeights) {
     return [];
   }
 
   const warnings: string[] = [];
-  const { appliedFilters, appliedPreferences } = metadata;
+  const appliedFilters: RecommendationMustHavePayload =
+    metadata?.appliedFilters ?? {};
+  const appliedPreferences: RecommendationPreferencesPayload =
+    metadata?.appliedPreferences ?? {};
+  const localLocationCriteria =
+    appliedPlaceDetails.length > 0 ||
+    getLocationNamesFromPayload({ location: appliedValues.location }).length > 0;
 
   const pushWarning = (label: string) => {
     warnings.push(
-      `${label} was detected, but its ranking weight is set to 0%, so it will not affect scores.`,
+      `${label} was detected, but its ranking weight is set to 0%, so it will not affect scores. It can still narrow which properties are shown.`,
     );
   };
 
   if (
     appliedWeights.location <= 0 &&
-    (appliedFilters.location || appliedPreferences.location)
+    (hasLocationCriteria(appliedFilters) ||
+      hasLocationCriteria(appliedPreferences) ||
+      localLocationCriteria)
   ) {
     pushWarning("Location");
   }
@@ -262,7 +321,6 @@ const RecommendationPage = () => {
 
   const formValues = useRecommendationStore((state) => state.formValues);
   const appliedValues = useRecommendationStore((state) => state.appliedValues);
-  const selectedPlaceId = useRecommendationStore((state) => state.selectedPlaceId);
   const selectedPlaceDetails = useRecommendationStore(
     (state) => state.selectedPlaceDetails,
   );
@@ -282,11 +340,11 @@ const RecommendationPage = () => {
   const scrollY = useRecommendationStore((state) => state.scrollY);
   const hasHydrated = useRecommendationStore((state) => state.hasHydrated);
   const setFormValue = useRecommendationStore((state) => state.setFormValue);
-  const setSelectedPlace = useRecommendationStore(
-    (state) => state.setSelectedPlace,
+  const addSelectedPlace = useRecommendationStore(
+    (state) => state.addSelectedPlace,
   );
-  const clearSelectedPlace = useRecommendationStore(
-    (state) => state.clearSelectedPlace,
+  const removeSelectedPlace = useRecommendationStore(
+    (state) => state.removeSelectedPlace,
   );
   const applyRecommendationPayload = useRecommendationStore(
     (state) => state.applyRecommendationPayload,
@@ -309,16 +367,18 @@ const RecommendationPage = () => {
   const isRestoringSession = hasMounted && !hasHydrated;
 
   const appliedPayload = useMemo(
-    () => buildRecommendationPreferencesPayload(appliedValues),
-    [appliedValues],
+    () =>
+      buildRecommendationPreferencesPayload(appliedValues, appliedPlaceDetails),
+    [appliedPlaceDetails, appliedValues],
   );
 
   const hasAppliedPreferences = useMemo(
     () =>
       hasGenerated &&
       (Boolean(appliedValues.brief.trim()) ||
+        appliedPlaceDetails.length > 0 ||
         hasStructuredPreferences(appliedValues)),
-    [appliedValues, hasGenerated],
+    [appliedPlaceDetails.length, appliedValues, hasGenerated],
   );
 
   const requestKey = useMemo(() => {
@@ -335,13 +395,24 @@ const RecommendationPage = () => {
   }, [appliedPlaceDetails, appliedValues, hasGenerated, pagination.limit, pagination.page]);
 
   const appliedSummary = useMemo(
-    () => buildAppliedSummary(recommendationMeta),
-    [recommendationMeta],
+    () =>
+      buildAppliedSummary(
+        recommendationMeta,
+        appliedValues,
+        appliedPlaceDetails,
+      ),
+    [appliedPlaceDetails, appliedValues, recommendationMeta],
   );
 
   const inactiveWeightWarnings = useMemo(
-    () => buildInactiveWeightWarnings(recommendationMeta, appliedWeights),
-    [appliedWeights, recommendationMeta],
+    () =>
+      buildInactiveWeightWarnings(
+        recommendationMeta,
+        appliedWeights,
+        appliedValues,
+        appliedPlaceDetails,
+      ),
+    [appliedPlaceDetails, appliedValues, appliedWeights, recommendationMeta],
   );
 
   const visibleWarnings = useMemo(
@@ -354,20 +425,31 @@ const RecommendationPage = () => {
     [inactiveWeightWarnings, recommendationMeta],
   );
 
+  const detectedEntityLabels = useMemo(
+    () =>
+      [
+        ...new Set(
+          (recommendationMeta?.detectedEntities ?? []).flatMap((entity) =>
+            buildDetectedEntityLabels(entity),
+          ),
+        ),
+      ],
+    [recommendationMeta],
+  );
+
   const shouldShowParsedSummary = useMemo(
     () =>
       Boolean(
         recommendationMeta &&
         (recommendationMeta.brief ||
-          recommendationMeta.detectedEntities.length > 0 ||
+          detectedEntityLabels.length > 0 ||
           visibleWarnings.length > 0 ||
           appliedSummary.length > 0),
       ),
-    [appliedSummary, recommendationMeta, visibleWarnings],
+    [appliedSummary, detectedEntityLabels.length, recommendationMeta, visibleWarnings],
   );
 
-  const requiresLocationSelection =
-    formValues.location.trim().length > 0 && !selectedPlaceId;
+  const requiresLocationSelection = formValues.location.trim().length > 0;
 
   useEffect(() => {
     setHasMounted(true);
@@ -415,15 +497,7 @@ const RecommendationPage = () => {
 
         const response = await getRecommendations({
           brief: appliedValues.brief.trim(),
-          preferences: {
-            ...appliedPayload,
-            ...(appliedPlaceDetails?.location
-              ? {
-                  latitude: appliedPlaceDetails.location.lat,
-                  longitude: appliedPlaceDetails.location.lng,
-                }
-              : {}),
-          },
+          preferences: appliedPayload,
           page: pagination.page,
           limit: pagination.limit,
         });
@@ -573,8 +647,7 @@ const RecommendationPage = () => {
     setError("");
 
     if (name === "location") {
-      clearSelectedPlace();
-      setIsLocationDropdownOpen(true);
+      setIsLocationDropdownOpen(value.trim().length > 0);
     }
   };
 
@@ -596,26 +669,30 @@ const RecommendationPage = () => {
   const handleLocationSelect = async (
     suggestion: RecommendationLocationSuggestion,
   ) => {
-    setFormValue("location", suggestion.description);
-    setSelectedPlace(suggestion.placeId, null);
-    setLocationSuggestions([]);
-    setIsLocationDropdownOpen(false);
-    setFieldErrors((current) => {
-      if (!current.location) {
-        return current;
-      }
-
-      const next = { ...current };
-      delete next.location;
-      return next;
-    });
-
     try {
       const placeDetails = await getLocationPlaceDetails(suggestion.placeId);
-      setSelectedPlace(suggestion.placeId, placeDetails ?? null);
+      if (!placeDetails) {
+        return;
+      }
+
+      addSelectedPlace(placeDetails);
+      setFormValue("location", "");
+      setLocationSuggestions([]);
+      setIsLocationDropdownOpen(false);
+      setFieldErrors((current) => {
+        if (!current.location) {
+          return current;
+        }
+
+        const next = { ...current };
+        delete next.location;
+        return next;
+      });
     } catch (fetchError) {
       console.error("Failed to fetch location details:", fetchError);
-      setSelectedPlace(suggestion.placeId, null);
+      showErrorToast("Failed to add that location. Please try again.", {
+        id: "recommendations-location-details-error",
+      });
     }
   };
 
@@ -635,11 +712,14 @@ const RecommendationPage = () => {
 
     setFieldErrors({});
     setScrollY(0);
+    const selectedLocationLabels = selectedPlaceDetails.map(
+      (place) => place.primaryText,
+    );
     applyRecommendationPayload({
       appliedValues: {
         ...formValues,
         brief: formValues.brief.trim(),
-        location: selectedPlaceDetails?.primaryText ?? formValues.location,
+        location: selectedLocationLabels.join(", "),
       },
       appliedPlaceDetails: selectedPlaceDetails,
     });
@@ -719,7 +799,7 @@ const RecommendationPage = () => {
           </div>
 
           <div className="space-y-3">
-            <label className={labelClassName}>Preferred Location</label>
+            <label className={labelClassName}>Preferred Locations</label>
             <div className="relative" ref={locationRef}>
               <input
                 name="location"
@@ -756,7 +836,9 @@ const RecommendationPage = () => {
                           type="button"
                           onClick={() => handleLocationSelect(suggestion)}
                           className={`block w-full border-b border-[#eef1fb] px-4 py-3 text-left font-auth-body text-sm transition last:border-b-0 hover:bg-[#f5f7ff] ${
-                            selectedPlaceId === suggestion.placeId
+                            selectedPlaceDetails.some(
+                              (place) => place.id === suggestion.placeId,
+                            )
                               ? "bg-[#eef2ff] text-[#004ac6]"
                               : "text-[#434655]"
                           }`}
@@ -912,13 +994,35 @@ const RecommendationPage = () => {
             </div>
           )}
 
-          {selectedPlaceDetails && (
-            <div className="inline-flex flex-wrap items-center gap-2 rounded-2xl border border-[#dbe6ff] bg-[#eef2ff] px-4 py-3 font-auth-body text-sm text-[#434655]">
-              <MapPinned className="h-4 w-4 text-[#004ac6]" />
-              <span className="font-semibold text-[#131b2e]">
-                {RECOMMENDATION_FORM_TEXT.selectedLocationLabel}:
-              </span>
-              <span>{selectedPlaceDetails.primaryText}</span>
+          {selectedPlaceDetails.length > 0 && (
+            <div className="space-y-3">
+              <div className="inline-flex flex-wrap items-center gap-2 rounded-2xl border border-[#dbe6ff] bg-[#eef2ff] px-4 py-3 font-auth-body text-sm text-[#434655]">
+                <MapPinned className="h-4 w-4 text-[#004ac6]" />
+                <span className="font-semibold text-[#131b2e]">
+                  {RECOMMENDATION_FORM_TEXT.selectedLocationLabel}:
+                </span>
+                <span>{selectedPlaceDetails.length}</span>
+              </div>
+
+              <div className="flex flex-wrap gap-3">
+                {selectedPlaceDetails.map((place) => (
+                  <span
+                    key={place.id}
+                    className="inline-flex items-center gap-2 rounded-full border border-[#bfd0ff] bg-[#eef3ff] px-4 py-2 font-auth-body text-sm font-medium text-[#004ac6]"
+                  >
+                    <MapPinned className="h-4 w-4" />
+                    <span>{place.primaryText}</span>
+                    <button
+                      type="button"
+                      onClick={() => removeSelectedPlace(place.id)}
+                      className="inline-flex h-5 w-5 items-center justify-center rounded-full text-[#004ac6] transition hover:bg-[#dbe6ff]"
+                      aria-label={`Remove ${place.primaryText}`}
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </span>
+                ))}
+              </div>
             </div>
           )}
         </div>
@@ -936,18 +1040,18 @@ const RecommendationPage = () => {
               )}
             </div>
 
-            {recommendationMeta.detectedEntities.length > 0 && (
+            {detectedEntityLabels.length > 0 && (
               <div className="mt-5">
                 <p className="mb-3 font-auth-body text-xs font-semibold uppercase tracking-[0.16em] text-[#5b6275]">
                   Detected Entities
                 </p>
                 <div className="flex flex-wrap gap-3">
-                  {recommendationMeta.detectedEntities.map((entity) => (
+                  {detectedEntityLabels.map((label) => (
                     <span
-                      key={`${entity.type}-${entity.raw}`}
+                      key={label}
                       className="rounded-full border border-[#d6defb] bg-white px-4 py-2 font-auth-body text-sm text-[#283044]"
                     >
-                      {formatDetectedEntity(entity)}
+                      {label}
                     </span>
                   ))}
                 </div>

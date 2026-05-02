@@ -50,7 +50,7 @@ export const RECOMMENDATION_SCORE_LABELS = {
 export const RECOMMENDATION_FORM_TEXT = {
   briefPlaceholder:
     "Need a home in Kathmandu under 1.2 crore near highway",
-  locationPlaceholder: "Select a city",
+  locationPlaceholder: "Search and add a location",
   locationLoading: "Loading locations...",
   locationEmpty: "No locations found",
   pricePlaceholder: "Enter amount",
@@ -60,7 +60,9 @@ export const RECOMMENDATION_FORM_TEXT = {
   generateButton: "Generate Recommendations",
   resetButton: "Reset Brief",
   requiresLocationSelection:
-    "Please choose one of the suggested locations so the recommendation request can include accurate coordinates.",
-  selectedLocationLabel: "Selected location",
+    "Please choose the highlighted location suggestion or clear the unfinished search before generating recommendations.",
+  selectedLocationLabel: "Selected locations",
+  multiLocationHelper:
+    "Add one or more areas. When you pick several, recommendations should treat them as alternative locations.",
   loadError: "Failed to load recommendations.",
 } as const;
