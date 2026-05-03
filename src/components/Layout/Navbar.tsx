@@ -72,7 +72,7 @@ const Navbar: React.FC<NavbarProps> = ({
         <div className="flex justify-between items-center py-4">
           {/* Brand */}
           <div className="flex items-center space-x-2">
-            <Link href={APP_ROUTES.home}>
+            <Link href={APP_ROUTES.home} className="cursor-pointer">
               {brand.logo ? (
                 <AppImage
                   src={brand.logo}
@@ -93,7 +93,7 @@ const Navbar: React.FC<NavbarProps> = ({
               <li key={item.path}>
                 <Link
                   href={item.path}
-                  className={`hover:text-blue-600 ${
+                  className={`cursor-pointer hover:text-blue-600 ${
                     isActivePath(item.path) ? "text-blue-700 font-semibold" : ""
                   }`}
                 >
@@ -107,7 +107,7 @@ const Navbar: React.FC<NavbarProps> = ({
             {!isLoading && !user && (
               <Link
                 href={APP_ROUTES.login}
-                className="rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
+                className="cursor-pointer rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
               >
                 login
               </Link>
@@ -118,7 +118,7 @@ const Navbar: React.FC<NavbarProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsProfileOpen((current) => !current)}
-                  className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-blue-600 hover:bg-blue-50 hover:text-blue-700"
+                  className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-blue-600 hover:bg-blue-50 hover:text-blue-700"
                 >
                   <span>{user.fullName}</span>
                 </button>
@@ -128,7 +128,7 @@ const Navbar: React.FC<NavbarProps> = ({
                     <Link
                       href={APP_ROUTES.favorites}
                       onClick={() => setIsProfileOpen(false)}
-                      className="flex items-center gap-3 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-blue-50 hover:text-blue-700"
+                      className="flex cursor-pointer items-center gap-3 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-blue-50 hover:text-blue-700"
                     >
                       <FontAwesomeIcon icon={faHeart} className="text-sm" />
                       <span>Favorites</span>
@@ -137,7 +137,7 @@ const Navbar: React.FC<NavbarProps> = ({
                     <Link
                       href={APP_ROUTES.settings}
                       onClick={() => setIsProfileOpen(false)}
-                      className="flex items-center gap-3 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-blue-50 hover:text-blue-700"
+                      className="flex cursor-pointer items-center gap-3 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-blue-50 hover:text-blue-700"
                     >
                       <FontAwesomeIcon icon={faGear} className="text-sm" />
                       <span>Settings</span>
@@ -147,7 +147,7 @@ const Navbar: React.FC<NavbarProps> = ({
                       <Link
                         href={APP_ROUTES.adminDashboard}
                         onClick={() => setIsProfileOpen(false)}
-                        className="flex items-center gap-3 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-blue-50 hover:text-blue-700"
+                        className="flex cursor-pointer items-center gap-3 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-blue-50 hover:text-blue-700"
                         title="Open dashboard"
                       >
                         <FontAwesomeIcon icon={faGauge} className="text-sm" />
@@ -158,7 +158,7 @@ const Navbar: React.FC<NavbarProps> = ({
                     <button
                       type="button"
                       onClick={() => void handleLogout()}
-                      className="flex w-full items-center gap-3 px-4 py-2 text-left text-sm font-medium text-slate-700 transition hover:bg-blue-50 hover:text-blue-700"
+                      className="flex w-full cursor-pointer items-center gap-3 px-4 py-2 text-left text-sm font-medium text-slate-700 transition hover:bg-blue-50 hover:text-blue-700"
                     >
                       <FontAwesomeIcon
                         icon={faArrowRightFromBracket}
@@ -176,7 +176,7 @@ const Navbar: React.FC<NavbarProps> = ({
           <div className="md:hidden">
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="p-2 rounded-md hover:bg-gray-100 focus:outline-none transition-colors"
+              className="cursor-pointer rounded-md p-2 transition-colors hover:bg-gray-100 focus:outline-none"
               aria-label="Toggle menu"
             >
               {isMenuOpen ? (
@@ -220,7 +220,7 @@ const Navbar: React.FC<NavbarProps> = ({
                 <li key={item.path}>
                   <Link
                     href={item.path}
-                    className={`block py-2 px-3 rounded-md ${
+                    className={`block cursor-pointer rounded-md px-3 py-2 ${
                       isActivePath(item.path)
                         ? "bg-blue-100 text-blue-700 font-medium"
                         : "text-gray-700 hover:bg-gray-100"
@@ -237,7 +237,7 @@ const Navbar: React.FC<NavbarProps> = ({
                   <li>
                     <Link
                       href={APP_ROUTES.login}
-                      className="block rounded-md py-2 px-3 text-gray-700 hover:bg-gray-100"
+                      className="block cursor-pointer rounded-md px-3 py-2 text-gray-700 hover:bg-gray-100"
                       onClick={() => setIsMenuOpen(false)}
                     >
                       Login
@@ -246,7 +246,7 @@ const Navbar: React.FC<NavbarProps> = ({
                   <li>
                     <Link
                       href={APP_ROUTES.register}
-                      className="block rounded-md bg-blue-600 py-2 px-3 font-medium text-white"
+                      className="block cursor-pointer rounded-md bg-blue-600 px-3 py-2 font-medium text-white"
                       onClick={() => setIsMenuOpen(false)}
                     >
                       Register
@@ -264,7 +264,7 @@ const Navbar: React.FC<NavbarProps> = ({
                     <li>
                       <Link
                         href={APP_ROUTES.adminDashboard}
-                        className="flex items-center gap-2 rounded-md px-3 py-2 font-medium text-gray-700 hover:bg-gray-100"
+                        className="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 font-medium text-gray-700 hover:bg-gray-100"
                         onClick={() => setIsMenuOpen(false)}
                       >
                         <FontAwesomeIcon icon={faGauge} className="text-sm" />
@@ -275,7 +275,7 @@ const Navbar: React.FC<NavbarProps> = ({
                   <li>
                     <Link
                       href={APP_ROUTES.favorites}
-                      className="flex items-center gap-2 rounded-md px-3 py-2 font-medium text-gray-700 hover:bg-gray-100"
+                      className="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 font-medium text-gray-700 hover:bg-gray-100"
                       onClick={() => setIsMenuOpen(false)}
                     >
                       <FontAwesomeIcon icon={faHeart} className="text-sm" />
@@ -285,7 +285,7 @@ const Navbar: React.FC<NavbarProps> = ({
                   <li>
                     <Link
                       href={APP_ROUTES.settings}
-                      className="flex items-center gap-2 rounded-md px-3 py-2 font-medium text-gray-700 hover:bg-gray-100"
+                      className="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 font-medium text-gray-700 hover:bg-gray-100"
                       onClick={() => setIsMenuOpen(false)}
                     >
                       <FontAwesomeIcon icon={faGear} className="text-sm" />
@@ -296,7 +296,7 @@ const Navbar: React.FC<NavbarProps> = ({
                     <button
                       type="button"
                       onClick={() => void handleLogout()}
-                      className="flex w-full items-center gap-2 rounded-md bg-slate-900 px-3 py-2 text-left font-medium text-white"
+                      className="flex w-full cursor-pointer items-center gap-2 rounded-md bg-slate-900 px-3 py-2 text-left font-medium text-white"
                     >
                       <span>Logout</span>
                     </button>

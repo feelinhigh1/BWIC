@@ -38,6 +38,13 @@ const buildRemotePattern = (
 const isProduction = process.env.NODE_ENV === "production";
 const apiOrigin = parseOrigin(process.env.NEXT_PUBLIC_API_BASE_URL);
 const apiRemotePattern = buildRemotePattern(apiOrigin);
+const googleHostedRemotePattern = buildRemotePattern(
+  "https://lh3.googleusercontent.com",
+);
+const remotePatterns = [
+  apiRemotePattern,
+  googleHostedRemotePattern,
+].filter((pattern): pattern is NonNullable<typeof pattern> => Boolean(pattern));
 
 const contentSecurityPolicy = [
   "default-src 'self'",
@@ -90,7 +97,7 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   outputFileTracingRoot: process.cwd(),
   images: {
-    remotePatterns: apiRemotePattern ? [apiRemotePattern] : [],
+    remotePatterns,
   },
   async headers() {
     return [

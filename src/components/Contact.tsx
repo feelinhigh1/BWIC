@@ -265,6 +265,26 @@ function ContactSection() {
                   </div>
                 </div>
 
+                <div className="space-y-2">
+                  <label
+                    htmlFor="phone"
+                    className="text-xs font-semibold tracking-[0.02em] text-[#434655]"
+                  >
+                    Phone Number
+                  </label>
+                  <input
+                    id="phone"
+                    name="phone"
+                    type="tel"
+                    value={formData.phone}
+                    onChange={handleInputChange}
+                    placeholder="+977 98XXXXXXXX"
+                    autoComplete="tel"
+                    inputMode="tel"
+                    className="w-full rounded-xl border border-transparent bg-[#eef0ff] px-4 py-3.5 text-sm text-[#131b2e] outline-none transition placeholder:text-[#7a8092] focus:border-[#c7d0ff] focus:ring-4 focus:ring-[#004ac6]/10"
+                  />
+                </div>
+
                 <div className="grid gap-6 md:grid-cols-2">
                   <div className="space-y-2">
                     <label

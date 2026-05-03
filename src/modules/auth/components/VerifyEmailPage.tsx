@@ -7,7 +7,6 @@ import { getApiErrorMessage, getApiFieldErrors } from "@/lib/api/errors";
 import {
   showErrorToast,
   showInfoToast,
-  showSuccessToast,
   showWarningToast,
 } from "@/lib/toast";
 import { resendOtp, verifyEmail } from "@/modules/auth/api";
@@ -139,7 +138,6 @@ export default function VerifyEmailPage() {
       });
 
       clearEmailVerificationState();
-      showSuccessToast("Email verified successfully.");
       await router.replace(
         `${APP_ROUTES.login}?email=${encodeURIComponent(
           normalizedEmail,

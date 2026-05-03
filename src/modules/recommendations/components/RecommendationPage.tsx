@@ -110,9 +110,7 @@ const buildDetectedEntityLabels = (
     case "preferredRoi":
       return [`Preferred ROI ${formatMetricValue(Number(entity.value), "%")}`];
     case "minArea":
-      return [
-        `Area at least ${formatMetricValue(Number(entity.value))} sq ft`,
-      ];
+      return [`Area at least ${formatMetricValue(Number(entity.value))} sq ft`];
     case "preferredArea":
       return [
         `Preferred area ${formatMetricValue(Number(entity.value))} sq ft`,
@@ -258,7 +256,8 @@ const buildInactiveWeightWarnings = (
     metadata?.appliedPreferences ?? {};
   const localLocationCriteria =
     appliedPlaceDetails.length > 0 ||
-    getLocationNamesFromPayload({ location: appliedValues.location }).length > 0;
+    getLocationNamesFromPayload({ location: appliedValues.location }).length >
+      0;
 
   const pushWarning = (label: string) => {
     warnings.push(
@@ -278,8 +277,7 @@ const buildInactiveWeightWarnings = (
   if (
     appliedWeights.price <= 0 &&
     ((appliedFilters.maxPrice !== undefined && appliedFilters.maxPrice > 0) ||
-      (appliedPreferences.price !== undefined &&
-        appliedPreferences.price > 0))
+      (appliedPreferences.price !== undefined && appliedPreferences.price > 0))
   ) {
     pushWarning("Price");
   }
@@ -332,7 +330,9 @@ const RecommendationPage = () => {
   );
   const pagination = useRecommendationStore((state) => state.pagination);
   const recommendationMeta = useRecommendationStore((state) => state.summary);
-  const appliedWeights = useRecommendationStore((state) => state.appliedWeights);
+  const appliedWeights = useRecommendationStore(
+    (state) => state.appliedWeights,
+  );
   const hasGenerated = useRecommendationStore((state) => state.hasGenerated);
   const lastCompletedRequestKey = useRecommendationStore(
     (state) => state.lastCompletedRequestKey,
@@ -392,7 +392,13 @@ const RecommendationPage = () => {
       page: pagination.page,
       limit: pagination.limit,
     });
-  }, [appliedPlaceDetails, appliedValues, hasGenerated, pagination.limit, pagination.page]);
+  }, [
+    appliedPlaceDetails,
+    appliedValues,
+    hasGenerated,
+    pagination.limit,
+    pagination.page,
+  ]);
 
   const appliedSummary = useMemo(
     () =>
@@ -426,14 +432,13 @@ const RecommendationPage = () => {
   );
 
   const detectedEntityLabels = useMemo(
-    () =>
-      [
-        ...new Set(
-          (recommendationMeta?.detectedEntities ?? []).flatMap((entity) =>
-            buildDetectedEntityLabels(entity),
-          ),
+    () => [
+      ...new Set(
+        (recommendationMeta?.detectedEntities ?? []).flatMap((entity) =>
+          buildDetectedEntityLabels(entity),
         ),
-      ],
+      ),
+    ],
     [recommendationMeta],
   );
 
@@ -446,7 +451,12 @@ const RecommendationPage = () => {
           visibleWarnings.length > 0 ||
           appliedSummary.length > 0),
       ),
-    [appliedSummary, detectedEntityLabels.length, recommendationMeta, visibleWarnings],
+    [
+      appliedSummary,
+      detectedEntityLabels.length,
+      recommendationMeta,
+      visibleWarnings,
+    ],
   );
 
   const requiresLocationSelection = formValues.location.trim().length > 0;
@@ -508,17 +518,15 @@ const RecommendationPage = () => {
 
         setResults({
           recommendations: Array.isArray(response.data) ? response.data : [],
-          pagination:
-            response.pagination ??
-            {
-              ...DEFAULT_RECOMMENDATION_PAGINATION,
-              page: pagination.page,
-              limit: pagination.limit,
-              total: 0,
-              totalPages: EMPTY_RECOMMENDATION_TOTAL_PAGES,
-              hasNext: false,
-              hasPrev: false,
-            },
+          pagination: response.pagination ?? {
+            ...DEFAULT_RECOMMENDATION_PAGINATION,
+            page: pagination.page,
+            limit: pagination.limit,
+            total: 0,
+            totalPages: EMPTY_RECOMMENDATION_TOTAL_PAGES,
+            hasNext: false,
+            hasPrev: false,
+          },
           summary: response.meta?.parsedBrief ?? null,
           appliedWeights: response.meta?.appliedWeights ?? null,
           requestKey,
