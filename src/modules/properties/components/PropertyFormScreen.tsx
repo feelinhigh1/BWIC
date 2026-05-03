@@ -5,6 +5,7 @@ import React, { useEffect, useId, useRef } from "react";
 import {
   ArrowLeft,
   Camera,
+  ChevronDown,
   FileText,
   ImagePlus,
   Info,
@@ -314,9 +315,11 @@ export default function PropertyFormScreen({
                     value={locationQuery}
                     onChange={onLocationQueryChange}
                     onFocus={() => onLocationDropdownOpenChange(true)}
+                    autoComplete="off"
                     placeholder={PROPERTY_FORM_TEXT.locationPlaceholder}
-                    className={`${getFieldClassName(Boolean(errors.location))} pl-12`}
+                    className={`${getFieldClassName(Boolean(errors.location))} pl-12 pr-12`}
                   />
+                  <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#7a8aa8]" />
 
                   {isLocationDropdownOpen ? (
                     <div
@@ -366,7 +369,7 @@ export default function PropertyFormScreen({
                   </p>
                 ) : (
                   <p className={helperClassName}>
-                    Choose a suggestion so the listing can be mapped accurately.
+                    Search and select a location from the dropdown suggestions.
                   </p>
                 )}
               </label>

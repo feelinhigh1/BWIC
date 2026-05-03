@@ -10,7 +10,11 @@ import {
 } from "@/lib/api/errors";
 import { showApiErrorToast, showSuccessToast } from "@/lib/toast";
 import { getCategories } from "@/modules/categories/api";
-import { getLocationSuggestions } from "@/modules/locations/api";
+import {
+  getLocationSuggestions,
+  LOCATION_AUTOCOMPLETE_DEBOUNCE_MS,
+  shouldFetchLocationSuggestions,
+} from "@/modules/locations/api";
 import { getProperty, updateProperty } from "@/modules/properties/api";
 import PropertyFormScreen from "@/modules/properties/components/PropertyFormScreen";
 import {
@@ -34,8 +38,6 @@ import type {
   PropertyFormData,
 } from "@/modules/properties/types";
 
-const LOCATION_AUTOCOMPLETE_DEBOUNCE_MS = 350;
-
 const revokePreviewUrl = (value: string) => {
   if (value.startsWith("blob:")) {
     URL.revokeObjectURL(value);
@@ -54,9 +56,6 @@ const removeFieldError = (
   delete nextErrors[key];
   return nextErrors;
 };
-
-const shouldFetchLocationSuggestions = (query: string): boolean =>
-  query.trim().length >= 3;
 
 const formatLastUpdated = (value?: string): string => {
   if (!value) {

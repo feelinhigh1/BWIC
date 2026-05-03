@@ -308,7 +308,14 @@ export default function CategoriesTable() {
                     </thead>
                     <tbody className="divide-y divide-[#eef2ff]">
                       {categories.map((category) => {
+                        const propertyCount = Number(category.propertyCount) || 0;
                         const isDeleting = deletingId === category.id;
+                        const hasAssignedProperties = propertyCount > 0;
+                        const isDeleteDisabled =
+                          isDeleting || hasAssignedProperties;
+                        const deleteButtonTitle = hasAssignedProperties
+                          ? "Remove or reassign properties before deleting this category."
+                          : "Delete category";
 
                         return (
                           <tr
@@ -326,8 +333,8 @@ export default function CategoriesTable() {
                             </td>
                             <td className="px-6 py-7 sm:px-8">
                               <span className="inline-flex rounded-full bg-[#d9e3ff] px-4 py-2 text-sm font-semibold text-[#0b4fd6]">
-                                {numberFormatter.format(category.propertyCount)}{" "}
-                                {Number(category.propertyCount) === 1
+                                {numberFormatter.format(propertyCount)}{" "}
+                                {propertyCount === 1
                                   ? "Property"
                                   : "Properties"}
                               </span>
@@ -363,10 +370,11 @@ export default function CategoriesTable() {
                                     setPendingDeleteCategory(category);
                                   }}
                                   aria-label={`Delete ${formatDisplayName(category.name)}`}
-                                  disabled={isDeleting}
+                                  disabled={isDeleteDisabled}
+                                  title={deleteButtonTitle}
                                   className={`${actionButtonClassName} ${
-                                    isDeleting
-                                      ? "cursor-not-allowed border-[#ffdcdc] bg-[#fff3f3] text-[#dd6b6b]"
+                                    isDeleteDisabled
+                                      ? "cursor-not-allowed border-[#e9eaf1] bg-[#f5f6fa] text-[#a0a7ba]"
                                       : "border-[#ffd9d9] bg-[#fff5f5] text-[#c43d3d] hover:border-[#ffbcbc] hover:bg-[#ffecec]"
                                   }`}
                                 >

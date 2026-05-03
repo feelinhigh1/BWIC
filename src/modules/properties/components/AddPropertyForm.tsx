@@ -7,7 +7,11 @@ import {
 } from "@/lib/api/errors";
 import { showApiErrorToast, showSuccessToast } from "@/lib/toast";
 import { getCategories } from "@/modules/categories/api";
-import { getLocationSuggestions } from "@/modules/locations/api";
+import {
+  getLocationSuggestions,
+  LOCATION_AUTOCOMPLETE_DEBOUNCE_MS,
+  shouldFetchLocationSuggestions,
+} from "@/modules/locations/api";
 import { createProperty } from "@/modules/properties/api";
 import PropertyFormScreen from "@/modules/properties/components/PropertyFormScreen";
 import {
@@ -24,8 +28,6 @@ import type {
   LocationSuggestion,
   PropertyFormData,
 } from "@/modules/properties/types";
-
-const LOCATION_AUTOCOMPLETE_DEBOUNCE_MS = 350;
 
 const revokePreviewUrl = (value: string) => {
   if (value.startsWith("blob:")) {
@@ -45,9 +47,6 @@ const removeFieldError = (
   delete nextErrors[key];
   return nextErrors;
 };
-
-const shouldFetchLocationSuggestions = (query: string): boolean =>
-  query.trim().length >= 3;
 
 const getBadgeClassName = (status: string): string => {
   if (status === "Available") {

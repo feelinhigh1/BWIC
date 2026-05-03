@@ -4,6 +4,7 @@ import React, {
   useMemo,
   useState,
 } from "react";
+import Link from "next/link";
 import { useRouter } from "next/router";
 import {
   ChevronDown,
@@ -11,6 +12,7 @@ import {
   ChevronRight,
   Eye,
   Pencil,
+  PlusCircle,
   Search,
   Trash2,
 } from "lucide-react";
@@ -437,6 +439,26 @@ export default function PropertiesTable() {
   return (
     <section className="px-4 py-8 sm:px-6 lg:px-10">
       <div className="mx-auto max-w-[1500px]">
+        <div className="mb-8 flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
+          <div className="max-w-3xl">
+            <h1 className="font-auth-headline text-[2.75rem] font-bold tracking-[-0.05em] text-[#131b2e] sm:text-[3.4rem]">
+              Properties
+            </h1>
+            <p className="mt-4 max-w-2xl text-base leading-7 text-[#4b5568] sm:text-lg">
+              Review every listing, refine the catalog, and publish new
+              investment opportunities without leaving this page.
+            </p>
+          </div>
+
+          <Link
+            href={APP_ROUTES.adminAddProperty}
+            className="inline-flex h-16 items-center gap-3 self-start rounded-2xl border border-[#0f49cc] bg-[#1550cf] px-6 text-lg font-semibold text-white shadow-[0_20px_35px_rgba(21,80,207,0.22)] transition hover:bg-[#0f49cc] focus:outline-none focus:ring-4 focus:ring-[#0f49cc]/20"
+          >
+            <PlusCircle className="h-5 w-5" />
+            <span>Add New Property</span>
+          </Link>
+        </div>
+
         <div className="rounded-[2rem] bg-white p-5 shadow-[0_24px_70px_rgba(19,27,46,0.06)] sm:p-8">
           <div className="grid grid-cols-1 gap-5 lg:grid-cols-6">
             <label className="block lg:col-span-2">
@@ -571,11 +593,27 @@ export default function PropertiesTable() {
                   <tr className="bg-white">
                     <td
                       colSpan={7}
-                      className="px-6 py-20 text-center text-lg text-[#5b6275]"
+                      className="px-6 py-20 text-center"
                     >
-                      {routeSearchTerm
-                        ? `No properties found for "${routeSearchTerm}".`
-                        : "No properties match the current filters."}
+                      <div className="mx-auto max-w-xl">
+                        <p className="text-lg text-[#5b6275]">
+                          {routeSearchTerm
+                            ? `No properties found for "${routeSearchTerm}".`
+                            : "No properties match the current filters."}
+                        </p>
+                        {!routeSearchTerm &&
+                          !filters.location &&
+                          !filters.status &&
+                          !filters.category && (
+                            <Link
+                              href={APP_ROUTES.adminAddProperty}
+                              className="mt-6 inline-flex items-center justify-center gap-3 rounded-2xl bg-[#004ac6] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#003da4]"
+                            >
+                              <PlusCircle className="h-4 w-4" />
+                              Add New Property
+                            </Link>
+                          )}
+                      </div>
                     </td>
                   </tr>
                 )}

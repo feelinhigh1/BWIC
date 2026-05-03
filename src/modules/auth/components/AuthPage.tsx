@@ -204,7 +204,7 @@ export default function AuthPage({
         email: normalizedEmail,
         password,
         rememberMe,
-        scope: isAdminLogin ? USER_ROLE.ADMIN : undefined,
+        scope: portal,
       });
 
       clearEmailVerificationState();
@@ -212,7 +212,7 @@ export default function AuthPage({
       await router.replace(
         resolveLandingPath(
           authenticatedUser,
-          isAdminLogin ? USER_ROLE.ADMIN : undefined,
+          portal,
           requestedRedirect,
         ),
       );

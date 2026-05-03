@@ -8,7 +8,6 @@ import {
   Mail,
   MessageSquareText,
   Phone,
-  RefreshCw,
 } from "lucide-react";
 import { APP_ROUTES } from "@/config/routes";
 import { getContactMessage } from "@/modules/contacts/api";
@@ -25,22 +24,14 @@ export default function AdminMessageDetailPage() {
 
   const [message, setMessage] = useState<ContactMessage | null>(null);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const fetchMessage = useCallback(async (options?: { silent?: boolean }) => {
+  const fetchMessage = useCallback(async () => {
     if (!id || Array.isArray(id)) {
       return;
     }
 
-    const silent = options?.silent ?? false;
-
-    if (silent) {
-      setRefreshing(true);
-    } else {
-      setLoading(true);
-    }
-
+    setLoading(true);
     setErrorMsg(null);
 
     try {
@@ -53,7 +44,6 @@ export default function AdminMessageDetailPage() {
       );
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
   }, [id]);
 
@@ -122,16 +112,6 @@ export default function AdminMessageDetailPage() {
             <ArrowLeft className="h-4 w-4" />
             Back to Messages
           </Link>
-
-          <button
-            type="button"
-            onClick={() => void fetchMessage({ silent: true })}
-            disabled={refreshing}
-            className="inline-flex items-center gap-3 self-start rounded-2xl border border-[#d8dce8] bg-white px-5 py-3 text-sm font-semibold text-[#1b2236] shadow-[0_16px_40px_rgba(19,27,46,0.05)] transition hover:bg-[#f7f8fb] disabled:cursor-not-allowed disabled:opacity-70"
-          >
-            <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
-            Refresh Inquiry
-          </button>
         </div>
 
         <div className="mt-6 rounded-[2rem] border border-[#e8ebf3] bg-white px-6 py-8 shadow-[0_24px_70px_rgba(19,27,46,0.06)] sm:px-8">
