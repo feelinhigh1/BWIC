@@ -19,7 +19,6 @@ import {
 import {
   showErrorToast,
   showSuccessToast,
-  showWarningToast,
 } from "@/lib/toast";
 import { resetPassword, validateResetToken } from "@/modules/auth/api";
 import RecoveryShell from "@/modules/auth/components/RecoveryShell";
@@ -147,13 +146,8 @@ export default function ResetPasswordPage() {
     });
 
     if (Object.keys(validationErrors).length > 0) {
-      const errorMessage =
-        validationErrors.newPassword || validationErrors.confirmPassword
-          ? "Please correct the highlighted fields and try again."
-          : "This password reset link is invalid or has expired.";
       setFieldErrors(validationErrors);
-      setError(errorMessage);
-      showWarningToast(errorMessage, { id: "reset-password-validation" });
+      setError("");
       return;
     }
 
@@ -270,7 +264,7 @@ export default function ResetPasswordPage() {
             </p>
           </div>
 
-          <form className="mt-10 space-y-6" onSubmit={handleSubmit}>
+          <form className="mt-10 space-y-6" noValidate onSubmit={handleSubmit}>
             <div className="space-y-2">
               <label
                 htmlFor="newPassword"
@@ -297,13 +291,16 @@ export default function ResetPasswordPage() {
                     setError("");
                   }}
                   autoComplete="new-password"
+                  aria-describedby={
+                    fieldErrors.newPassword ? "new-password-error" : undefined
+                  }
+                  aria-invalid={Boolean(fieldErrors.newPassword)}
                   className={`w-full rounded-[16px] border px-5 py-4 pr-14 text-lg text-[#131b2e] outline-none transition placeholder:text-[#9aa1b8] focus:ring-4 ${
                     fieldErrors.newPassword
                       ? "border-[#ba1a1a] bg-[#fff1ef] focus:ring-[#ba1a1a]/12"
                       : "border-transparent bg-[#eef0ff] focus:border-[#dbe1ff] focus:ring-[#004ac6]/12"
                   }`}
                   placeholder="••••••••"
-                  required
                 />
                 <button
                   type="button"
@@ -321,7 +318,7 @@ export default function ResetPasswordPage() {
                 </button>
               </div>
               {fieldErrors.newPassword ? (
-                <p className="text-sm text-[#93000a]">
+                <p id="new-password-error" className="text-sm text-[#93000a]">
                   {fieldErrors.newPassword}
                 </p>
               ) : null}
@@ -353,13 +350,18 @@ export default function ResetPasswordPage() {
                     setError("");
                   }}
                   autoComplete="new-password"
+                  aria-describedby={
+                    fieldErrors.confirmPassword
+                      ? "confirm-password-error"
+                      : undefined
+                  }
+                  aria-invalid={Boolean(fieldErrors.confirmPassword)}
                   className={`w-full rounded-[16px] border px-5 py-4 pr-14 text-lg text-[#131b2e] outline-none transition placeholder:text-[#9aa1b8] focus:ring-4 ${
                     fieldErrors.confirmPassword
                       ? "border-[#ba1a1a] bg-[#fff1ef] focus:ring-[#ba1a1a]/12"
                       : "border-transparent bg-[#eef0ff] focus:border-[#dbe1ff] focus:ring-[#004ac6]/12"
                   }`}
                   placeholder="••••••••"
-                  required
                 />
                 <button
                   type="button"
@@ -377,7 +379,10 @@ export default function ResetPasswordPage() {
                 </button>
               </div>
               {fieldErrors.confirmPassword ? (
-                <p className="text-sm text-[#93000a]">
+                <p
+                  id="confirm-password-error"
+                  className="text-sm text-[#93000a]"
+                >
                   {fieldErrors.confirmPassword}
                 </p>
               ) : null}

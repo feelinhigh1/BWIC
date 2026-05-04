@@ -10,7 +10,6 @@ import { getApiErrorMessage, getApiFieldErrors } from "@/lib/api/errors";
 import {
   showErrorToast,
   showSuccessToast,
-  showWarningToast,
 } from "@/lib/toast";
 import {
   clearEmailVerificationState,
@@ -162,10 +161,6 @@ export default function AuthPage({
 
     if (Object.keys(validationErrors).length > 0) {
       setFieldErrors(validationErrors);
-      setError("Please correct the highlighted fields and try again.");
-      showWarningToast("Please correct the highlighted fields and try again.", {
-        id: "auth-validation",
-      });
       return;
     }
 
@@ -217,15 +212,21 @@ export default function AuthPage({
         ),
       );
     } catch (submissionError) {
-      setFieldErrors(getApiFieldErrors(submissionError));
+      const apiFieldErrors = getApiFieldErrors(submissionError);
+      const hasFieldErrors = Object.keys(apiFieldErrors).length > 0;
+
+      setFieldErrors(apiFieldErrors);
       const errorMessage = getApiErrorMessage(
         submissionError,
         isRegister
           ? "Unable to create your account right now."
           : "Unable to log in right now. Please try again later.",
       );
-      setError(errorMessage);
-      showErrorToast(errorMessage, { id: "auth-submit-error" });
+      setError(hasFieldErrors ? "" : errorMessage);
+
+      if (!hasFieldErrors) {
+        showErrorToast(errorMessage, { id: "auth-submit-error" });
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -322,7 +323,7 @@ export default function AuthPage({
                 </h2>
               </div>
 
-              <form className="space-y-6" onSubmit={handleSubmit}>
+              <form className="space-y-6" noValidate onSubmit={handleSubmit}>
                 {isRegister && (
                   <div className="space-y-2">
                     <label
@@ -341,15 +342,21 @@ export default function AuthPage({
                         setError("");
                       }}
                       placeholder="Your full name"
+                      aria-describedby={
+                        fieldErrors.fullName ? "fullName-error" : undefined
+                      }
+                      aria-invalid={Boolean(fieldErrors.fullName)}
                       className={`w-full rounded-lg px-4 py-3.5 text-[#131b2e] outline-none transition focus:ring-2 ${
                         fieldErrors.fullName
                           ? "border border-[#ba1a1a] bg-[#fff1ef] focus:ring-[#ba1a1a]/20"
                           : "bg-[#dae2fd] focus:ring-[#004ac6]/20"
                       }`}
-                      required
                     />
                     {fieldErrors.fullName ? (
-                      <p className="text-sm text-[#93000a]">
+                      <p
+                        id="fullName-error"
+                        className="text-sm text-[#93000a]"
+                      >
                         {fieldErrors.fullName}
                       </p>
                     ) : null}
@@ -373,15 +380,16 @@ export default function AuthPage({
                       setError("");
                     }}
                     placeholder="bwic@gmail.com"
+                    aria-describedby={fieldErrors.email ? "email-error" : undefined}
+                    aria-invalid={Boolean(fieldErrors.email)}
                     className={`w-full rounded-lg px-4 py-3.5 text-[#131b2e] outline-none transition placeholder:text-[#8c93ad] focus:ring-2 ${
                       fieldErrors.email
                         ? "border border-[#ba1a1a] bg-[#fff1ef] focus:ring-[#ba1a1a]/20"
                         : "bg-[#dae2fd] focus:ring-[#004ac6]/20"
                     }`}
-                    required
                   />
                   {fieldErrors.email ? (
-                    <p className="text-sm text-[#93000a]">
+                    <p id="email-error" className="text-sm text-[#93000a]">
                       {fieldErrors.email}
                     </p>
                   ) : null}
@@ -416,13 +424,15 @@ export default function AuthPage({
                         setError("");
                       }}
                       placeholder="••••••••"
+                      aria-describedby={
+                        fieldErrors.password ? "password-error" : undefined
+                      }
+                      aria-invalid={Boolean(fieldErrors.password)}
                       className={`w-full rounded-lg px-4 py-3.5 pr-12 text-[#131b2e] outline-none transition placeholder:text-[#8c93ad] focus:ring-2 ${
                         fieldErrors.password
                           ? "border border-[#ba1a1a] bg-[#fff1ef] focus:ring-[#ba1a1a]/20"
                           : "bg-[#dae2fd] focus:ring-[#004ac6]/20"
                       }`}
-                      required
-                      minLength={8}
                     />
                     <button
                       type="button"
@@ -440,7 +450,7 @@ export default function AuthPage({
                     </button>
                   </div>
                   {fieldErrors.password ? (
-                    <p className="text-sm text-[#93000a]">
+                    <p id="password-error" className="text-sm text-[#93000a]">
                       {fieldErrors.password}
                     </p>
                   ) : null}

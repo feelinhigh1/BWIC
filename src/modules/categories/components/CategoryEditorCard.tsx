@@ -16,6 +16,7 @@ interface CategoryEditorCardProps {
   inputPlaceholder?: string;
   icon?: LucideIcon;
   submitIcon?: LucideIcon;
+  nameError?: string;
 }
 
 const CategoryEditorCard = ({
@@ -33,6 +34,7 @@ const CategoryEditorCard = ({
   inputPlaceholder = "Enter category name",
   icon: HeaderIcon = Shapes,
   submitIcon: SubmitIcon,
+  nameError,
 }: CategoryEditorCardProps) => {
   return (
     <section className="relative flex min-h-[calc(100vh-9rem)] items-center justify-center overflow-hidden bg-[radial-gradient(circle_at_top_left,rgba(118,126,255,0.16),transparent_24%),radial-gradient(circle_at_bottom_right,rgba(61,97,242,0.08),transparent_26%),linear-gradient(180deg,#f7f5ff_0%,#f9f8ff_100%)] px-4 py-10 sm:px-6 lg:px-10">
@@ -74,23 +76,38 @@ const CategoryEditorCard = ({
                 </p>
               </div>
             ) : (
-              <form onSubmit={onSubmit} className="mt-7 space-y-6">
+              <form noValidate onSubmit={onSubmit} className="mt-7 space-y-6">
                 <label className="block">
                   <span className="mb-3 block text-[0.82rem] font-extrabold uppercase tracking-[0.2em] text-[#2a3553]">
                     Category Name
                   </span>
-                  <div className="rounded-[1.6rem] border border-[#d7def5] bg-[#f7f9ff] p-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] transition focus-within:border-[#a9bbff] focus-within:bg-white focus-within:shadow-[0_0_0_4px_rgba(0,74,198,0.08)]">
+                  <div
+                    className={`rounded-[1.6rem] border p-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] transition focus-within:bg-white ${
+                      nameError
+                        ? "border-[#ef4444] bg-[#fff1f2] focus-within:border-[#ef4444] focus-within:shadow-[0_0_0_4px_rgba(239,68,68,0.08)]"
+                        : "border-[#d7def5] bg-[#f7f9ff] focus-within:border-[#a9bbff] focus-within:shadow-[0_0_0_4px_rgba(0,74,198,0.08)]"
+                    }`}
+                  >
                     <input
                       type="text"
                       id="name"
                       value={name}
                       onChange={(event) => onNameChange(event.target.value)}
+                      aria-describedby={nameError ? "category-name-error" : undefined}
+                      aria-invalid={Boolean(nameError)}
                       className="w-full rounded-[1.1rem] border-0 bg-transparent px-4 py-3 text-[1.08rem] font-medium text-[#131b2e] outline-none placeholder:text-[#8a94ad]"
                       placeholder={inputPlaceholder}
                       autoComplete="off"
-                      required
                     />
                   </div>
+                  {nameError ? (
+                    <p
+                      id="category-name-error"
+                      className="mt-3 text-sm font-medium text-[#93000a]"
+                    >
+                      {nameError}
+                    </p>
+                  ) : null}
                 </label>
 
                 <button

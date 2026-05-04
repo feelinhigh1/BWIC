@@ -4,7 +4,7 @@ import { FormEvent, useState } from "react";
 import { ArrowLeft, KeyRound, Mail } from "lucide-react";
 import { APP_ROUTES } from "@/config/routes";
 import { getApiErrorMessage } from "@/lib/api/errors";
-import { showErrorToast, showInfoToast, showWarningToast } from "@/lib/toast";
+import { showErrorToast, showInfoToast } from "@/lib/toast";
 import { forgotPassword } from "@/modules/auth/api";
 import RecoveryShell from "@/modules/auth/components/RecoveryShell";
 import { validateForgotPasswordForm } from "@/modules/auth/form-validation";
@@ -27,10 +27,7 @@ export default function ForgotPasswordPage() {
 
     if (Object.keys(validationErrors).length > 0) {
       setFieldErrors(validationErrors);
-      setError("Please correct the highlighted fields and try again.");
-      showWarningToast("Please correct the highlighted fields and try again.", {
-        id: "forgot-password-validation",
-      });
+      setError("");
       return;
     }
 
@@ -77,7 +74,7 @@ export default function ForgotPasswordPage() {
         </div>
 
         <div className="auth-recovery-card mx-auto max-w-3xl rounded-[28px] p-8 sm:p-10 lg:p-12">
-          <form className="space-y-8" onSubmit={handleSubmit}>
+          <form className="space-y-8" noValidate onSubmit={handleSubmit}>
             <div className="space-y-3">
               <label
                 htmlFor="email"
@@ -97,17 +94,20 @@ export default function ForgotPasswordPage() {
                   }}
                   placeholder="bwic@gmail.com"
                   autoComplete="email"
+                  aria-describedby={fieldErrors.email ? "email-error" : undefined}
+                  aria-invalid={Boolean(fieldErrors.email)}
                   className={`auth-recovery-input w-full rounded-[18px] border px-5 py-4 pr-14 text-lg text-[#131b2e] outline-none placeholder:text-[#737686] ${
                     fieldErrors.email
                       ? "border-[#ba1a1a] bg-[#fff1ef]"
                       : "border-transparent"
                   }`}
-                  required
                 />
                 <Mail className="pointer-events-none absolute top-1/2 right-5 h-6 w-6 -translate-y-1/2 text-[#737686]" />
               </div>
               {fieldErrors.email ? (
-                <p className="text-sm text-[#93000a]">{fieldErrors.email}</p>
+                <p id="email-error" className="text-sm text-[#93000a]">
+                  {fieldErrors.email}
+                </p>
               ) : null}
               <p className="text-sm leading-6 text-[#737686]">
                 We&apos;ll always return the same response to protect account

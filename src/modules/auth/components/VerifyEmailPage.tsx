@@ -7,7 +7,6 @@ import { getApiErrorMessage, getApiFieldErrors } from "@/lib/api/errors";
 import {
   showErrorToast,
   showInfoToast,
-  showWarningToast,
 } from "@/lib/toast";
 import { resendOtp, verifyEmail } from "@/modules/auth/api";
 import RecoveryShell from "@/modules/auth/components/RecoveryShell";
@@ -119,10 +118,7 @@ export default function VerifyEmailPage() {
 
     if (Object.keys(validationErrors).length > 0) {
       setFieldErrors(validationErrors);
-      setError("Please correct the highlighted fields and try again.");
-      showWarningToast("Please correct the highlighted fields and try again.", {
-        id: "verify-email-validation",
-      });
+      setError("");
       return;
     }
 
@@ -168,10 +164,7 @@ export default function VerifyEmailPage() {
 
     if (validationErrors.email) {
       setFieldErrors({ email: validationErrors.email });
-      setError(validationErrors.email);
-      showWarningToast(validationErrors.email, {
-        id: "verify-email-resend-validation",
-      });
+      setError("");
       return;
     }
 

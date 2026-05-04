@@ -1,7 +1,7 @@
 import { useRouter } from "next/router";
 import React, { FormEvent, useState } from "react";
 import { APP_ROUTES } from "@/config/routes";
-import { showErrorToast, showSuccessToast, showWarningToast } from "@/lib/toast";
+import { showErrorToast, showSuccessToast } from "@/lib/toast";
 import { createCategory } from "@/modules/categories/api";
 import CategoryEditorCard from "@/modules/categories/components/CategoryEditorCard";
 import { Plus, Shapes } from "lucide-react";
@@ -21,9 +21,6 @@ export default function CreateCategoryForm() {
     if (!normalizedName) {
       setError("Category name is required.");
       setSuccess("");
-      showWarningToast("Category name is required.", {
-        id: "category-create-validation",
-      });
       return;
     }
 
@@ -57,8 +54,9 @@ export default function CreateCategoryForm() {
       name={name}
       onNameChange={setName}
       onSubmit={handleSubmit}
-      errorMessage={error}
+      errorMessage={error === "Category name is required." ? "" : error}
       successMessage={success}
+      nameError={error === "Category name is required." ? error : undefined}
       submitting={submitting}
       submitLabel="Add Category"
       submittingLabel="Creating..."

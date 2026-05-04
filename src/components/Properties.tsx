@@ -104,6 +104,12 @@ const formatPercent = (value?: string | number | null): string => {
   }).format(parsed)}%`;
 };
 
+const preventNumberInputScroll = (
+  event: React.WheelEvent<HTMLInputElement>,
+) => {
+  event.currentTarget.blur();
+};
+
 const getAreaDisplay = (
   property: PropertySummary,
 ): { value: string; unit: string } => {
@@ -519,8 +525,6 @@ const Properties = () => {
                     placeholder="All Locations"
                     className={fieldClassName}
                   />
-                  <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#737686]" />
-
                   {isLocationDropdownOpen &&
                     shouldFetchLocationSuggestions(locationQuery) && (
                       <div className="absolute z-20 mt-2 max-h-64 w-full overflow-auto rounded-2xl border border-[#e3e6f3] bg-white p-2 shadow-[0_16px_30px_rgba(19,27,46,0.08)]">
@@ -589,6 +593,7 @@ const Properties = () => {
                     name="minPrice"
                     value={filters.minPrice}
                     onChange={handleFilterChange}
+                    onWheel={preventNumberInputScroll}
                     placeholder="Min"
                     className={fieldClassName}
                   />
@@ -597,6 +602,7 @@ const Properties = () => {
                     name="maxPrice"
                     value={filters.maxPrice}
                     onChange={handleFilterChange}
+                    onWheel={preventNumberInputScroll}
                     placeholder="Max"
                     className={fieldClassName}
                   />
@@ -636,6 +642,7 @@ const Properties = () => {
                   name="minArea"
                   value={filters.minArea}
                   onChange={handleFilterChange}
+                  onWheel={preventNumberInputScroll}
                   placeholder="e.g. 1500"
                   className={fieldClassName}
                 />

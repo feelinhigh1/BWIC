@@ -8,11 +8,7 @@ import {
 import { useState, type ChangeEvent, type FormEvent } from "react";
 import { sendJson } from "@/lib/api/client";
 import { API_ENDPOINTS } from "@/lib/api/routes";
-import {
-  showErrorToast,
-  showSuccessToast,
-  showWarningToast,
-} from "@/lib/toast";
+import { showErrorToast, showSuccessToast } from "@/lib/toast";
 import {
   CONTACT_EMAIL_PATTERN,
   CONTACT_FORM_INITIAL_VALUES,
@@ -31,6 +27,41 @@ const primaryGradient = {
 const createInitialContactFormData = () => ({
   ...CONTACT_FORM_INITIAL_VALUES,
 });
+
+type ContactFormData = ReturnType<typeof createInitialContactFormData>;
+type ContactFieldName = keyof ContactFormData;
+type ContactFieldErrors = Partial<Record<ContactFieldName, string>>;
+
+const validateContactForm = (values: ContactFormData): ContactFieldErrors => {
+  const errors: ContactFieldErrors = {};
+  const normalizedName = values.name.trim();
+  const normalizedEmail = values.email.trim();
+  const normalizedPhone = values.phone.trim();
+
+  if (!normalizedName) {
+    errors.name = "Full name is required.";
+  }
+
+  if (!normalizedEmail) {
+    errors.email = "Email is required.";
+  } else if (!CONTACT_EMAIL_PATTERN.test(normalizedEmail)) {
+    errors.email = CONTACT_FORM_MESSAGES.invalidEmail;
+  }
+
+  if (normalizedPhone && !CONTACT_PHONE_PATTERN.test(normalizedPhone)) {
+    errors.phone = CONTACT_FORM_MESSAGES.invalidPhone;
+  }
+
+  if (!values.propertyType) {
+    errors.propertyType = "Please select a service of interest.";
+  }
+
+  if (!values.investmentRange) {
+    errors.investmentRange = "Please select an investment range.";
+  }
+
+  return errors;
+};
 
 const contactMethods: Array<{
   title: string;
@@ -79,63 +110,63 @@ function SocialIcon({ path }: { path: string }) {
 
 function ContactSection() {
   const [formData, setFormData] = useState(createInitialContactFormData);
+  const [fieldErrors, setFieldErrors] = useState<ContactFieldErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleInputChange = (
     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
   ) => {
     const { name, value } = e.target;
+    const fieldName = name as ContactFieldName;
 
     setFormData((prev) => ({
       ...prev,
-      [name]: value,
+      [fieldName]: value,
     }));
+
+    setFieldErrors((current) => {
+      if (!current[fieldName]) {
+        return current;
+      }
+
+      const next = { ...current };
+      delete next[fieldName];
+      return next;
+    });
   };
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
+    const validationErrors = validateContactForm(formData);
+
+    if (Object.keys(validationErrors).length > 0) {
+      setFieldErrors(validationErrors);
+      return;
+    }
+
     const { name, email, phone, investmentRange, propertyType, message } =
       formData;
 
-    if (!name.trim() || !email.trim() || !investmentRange || !propertyType) {
-      showWarningToast(CONTACT_FORM_MESSAGES.requiredFields, {
-        id: "contact-required-fields",
-      });
-      return;
-    }
-
-    if (!CONTACT_EMAIL_PATTERN.test(email)) {
-      showWarningToast(CONTACT_FORM_MESSAGES.invalidEmail, {
-        id: "contact-invalid-email",
-      });
-      return;
-    }
-
-    if (phone && !CONTACT_PHONE_PATTERN.test(phone)) {
-      showWarningToast(CONTACT_FORM_MESSAGES.invalidPhone, {
-        id: "contact-invalid-phone",
-      });
-      return;
-    }
-
+    setFieldErrors({});
     setIsSubmitting(true);
 
     try {
       await sendJson(API_ENDPOINTS.contacts.list, {
         method: "POST",
         body: {
-          name,
-          email,
-          phone,
+          name: name.trim(),
+          email: email.trim(),
+          phone: phone.trim(),
           investmentRange,
           propertyType,
-          message,
+          message: message.trim(),
         },
       });
 
       showSuccessToast(CONTACT_FORM_MESSAGES.success);
       setFormData(createInitialContactFormData());
+      setFieldErrors({});
     } catch (error) {
       const errorMessage =
         error instanceof Error
@@ -224,7 +255,7 @@ function ContactSection() {
 
           <div className="lg:col-span-7">
             <div className="rounded-[20px] bg-white p-6 shadow-[0_24px_60px_rgba(19,27,46,0.08)] ring-1 ring-[#d8ddf2] sm:p-8 lg:p-10">
-              <form className="space-y-6" onSubmit={handleSubmit}>
+              <form className="space-y-6" noValidate onSubmit={handleSubmit}>
                 <div className="grid gap-6 md:grid-cols-2">
                   <div className="space-y-2">
                     <label
@@ -240,9 +271,19 @@ function ContactSection() {
                       value={formData.name}
                       onChange={handleInputChange}
                       placeholder="John Doe"
-                      required
-                      className="w-full rounded-xl border border-transparent bg-[#eef0ff] px-4 py-3.5 text-sm text-[#131b2e] outline-none transition placeholder:text-[#7a8092] focus:border-[#c7d0ff] focus:ring-4 focus:ring-[#004ac6]/10"
+                      aria-describedby={fieldErrors.name ? "contact-name-error" : undefined}
+                      aria-invalid={Boolean(fieldErrors.name)}
+                      className={`w-full rounded-xl border px-4 py-3.5 text-sm text-[#131b2e] outline-none transition placeholder:text-[#7a8092] focus:ring-4 ${
+                        fieldErrors.name
+                          ? "border-[#ba1a1a] bg-[#fff1ef] focus:border-[#ba1a1a] focus:ring-[#ba1a1a]/10"
+                          : "border-transparent bg-[#eef0ff] focus:border-[#c7d0ff] focus:ring-[#004ac6]/10"
+                      }`}
                     />
+                    {fieldErrors.name ? (
+                      <p id="contact-name-error" className="text-sm text-[#93000a]">
+                        {fieldErrors.name}
+                      </p>
+                    ) : null}
                   </div>
 
                   <div className="space-y-2">
@@ -259,9 +300,24 @@ function ContactSection() {
                       value={formData.email}
                       onChange={handleInputChange}
                       placeholder="john@example.com"
-                      required
-                      className="w-full rounded-xl border border-transparent bg-[#eef0ff] px-4 py-3.5 text-sm text-[#131b2e] outline-none transition placeholder:text-[#7a8092] focus:border-[#c7d0ff] focus:ring-4 focus:ring-[#004ac6]/10"
+                      aria-describedby={
+                        fieldErrors.email ? "contact-email-error" : undefined
+                      }
+                      aria-invalid={Boolean(fieldErrors.email)}
+                      className={`w-full rounded-xl border px-4 py-3.5 text-sm text-[#131b2e] outline-none transition placeholder:text-[#7a8092] focus:ring-4 ${
+                        fieldErrors.email
+                          ? "border-[#ba1a1a] bg-[#fff1ef] focus:border-[#ba1a1a] focus:ring-[#ba1a1a]/10"
+                          : "border-transparent bg-[#eef0ff] focus:border-[#c7d0ff] focus:ring-[#004ac6]/10"
+                      }`}
                     />
+                    {fieldErrors.email ? (
+                      <p
+                        id="contact-email-error"
+                        className="text-sm text-[#93000a]"
+                      >
+                        {fieldErrors.email}
+                      </p>
+                    ) : null}
                   </div>
                 </div>
 
@@ -281,8 +337,19 @@ function ContactSection() {
                     placeholder="+977 98XXXXXXXX"
                     autoComplete="tel"
                     inputMode="tel"
-                    className="w-full rounded-xl border border-transparent bg-[#eef0ff] px-4 py-3.5 text-sm text-[#131b2e] outline-none transition placeholder:text-[#7a8092] focus:border-[#c7d0ff] focus:ring-4 focus:ring-[#004ac6]/10"
+                    aria-describedby={fieldErrors.phone ? "contact-phone-error" : undefined}
+                    aria-invalid={Boolean(fieldErrors.phone)}
+                    className={`w-full rounded-xl border px-4 py-3.5 text-sm text-[#131b2e] outline-none transition placeholder:text-[#7a8092] focus:ring-4 ${
+                      fieldErrors.phone
+                        ? "border-[#ba1a1a] bg-[#fff1ef] focus:border-[#ba1a1a] focus:ring-[#ba1a1a]/10"
+                        : "border-transparent bg-[#eef0ff] focus:border-[#c7d0ff] focus:ring-[#004ac6]/10"
+                    }`}
                   />
+                  {fieldErrors.phone ? (
+                    <p id="contact-phone-error" className="text-sm text-[#93000a]">
+                      {fieldErrors.phone}
+                    </p>
+                  ) : null}
                 </div>
 
                 <div className="grid gap-6 md:grid-cols-2">
@@ -299,8 +366,17 @@ function ContactSection() {
                         name="propertyType"
                         value={formData.propertyType}
                         onChange={handleInputChange}
-                        required
-                        className="w-full appearance-none rounded-xl border border-transparent bg-[#eef0ff] px-4 py-3.5 pr-11 text-sm text-[#131b2e] outline-none transition focus:border-[#c7d0ff] focus:ring-4 focus:ring-[#004ac6]/10"
+                        aria-describedby={
+                          fieldErrors.propertyType
+                            ? "contact-property-type-error"
+                            : undefined
+                        }
+                        aria-invalid={Boolean(fieldErrors.propertyType)}
+                        className={`w-full appearance-none rounded-xl border px-4 py-3.5 pr-11 text-sm text-[#131b2e] outline-none transition focus:ring-4 ${
+                          fieldErrors.propertyType
+                            ? "border-[#ba1a1a] bg-[#fff1ef] focus:border-[#ba1a1a] focus:ring-[#ba1a1a]/10"
+                            : "border-transparent bg-[#eef0ff] focus:border-[#c7d0ff] focus:ring-[#004ac6]/10"
+                        }`}
                       >
                         <option value="">Select a service</option>
                         {CONTACT_PROPERTY_TYPE_OPTIONS.map((option) => (
@@ -311,6 +387,14 @@ function ContactSection() {
                       </select>
                       <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#6b7285]" />
                     </div>
+                    {fieldErrors.propertyType ? (
+                      <p
+                        id="contact-property-type-error"
+                        className="text-sm text-[#93000a]"
+                      >
+                        {fieldErrors.propertyType}
+                      </p>
+                    ) : null}
                   </div>
 
                   <div className="space-y-2">
@@ -326,8 +410,17 @@ function ContactSection() {
                         name="investmentRange"
                         value={formData.investmentRange}
                         onChange={handleInputChange}
-                        required
-                        className="w-full appearance-none rounded-xl border border-transparent bg-[#eef0ff] px-4 py-3.5 pr-11 text-sm text-[#131b2e] outline-none transition focus:border-[#c7d0ff] focus:ring-4 focus:ring-[#004ac6]/10"
+                        aria-describedby={
+                          fieldErrors.investmentRange
+                            ? "contact-investment-range-error"
+                            : undefined
+                        }
+                        aria-invalid={Boolean(fieldErrors.investmentRange)}
+                        className={`w-full appearance-none rounded-xl border px-4 py-3.5 pr-11 text-sm text-[#131b2e] outline-none transition focus:ring-4 ${
+                          fieldErrors.investmentRange
+                            ? "border-[#ba1a1a] bg-[#fff1ef] focus:border-[#ba1a1a] focus:ring-[#ba1a1a]/10"
+                            : "border-transparent bg-[#eef0ff] focus:border-[#c7d0ff] focus:ring-[#004ac6]/10"
+                        }`}
                       >
                         <option value="">Select a range</option>
                         {CONTACT_INVESTMENT_RANGE_OPTIONS.map((option) => (
@@ -338,6 +431,14 @@ function ContactSection() {
                       </select>
                       <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#6b7285]" />
                     </div>
+                    {fieldErrors.investmentRange ? (
+                      <p
+                        id="contact-investment-range-error"
+                        className="text-sm text-[#93000a]"
+                      >
+                        {fieldErrors.investmentRange}
+                      </p>
+                    ) : null}
                   </div>
                 </div>
 

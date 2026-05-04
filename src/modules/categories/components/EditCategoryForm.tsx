@@ -5,7 +5,6 @@ import { APP_ROUTES } from "@/config/routes";
 import {
   showErrorToast,
   showSuccessToast,
-  showWarningToast,
 } from "@/lib/toast";
 import { getCategory, updateCategory } from "@/modules/categories/api";
 import { Pencil } from "lucide-react";
@@ -49,9 +48,6 @@ const EditCategory = () => {
 
     if (!categoryId) {
       setLoading(false);
-      showWarningToast("Category ID is missing.", {
-        id: "category-id-missing",
-      });
       setError("Category ID is missing.");
       return;
     }
@@ -64,9 +60,6 @@ const EditCategory = () => {
 
     if (!categoryId) {
       setError("Category ID is missing.");
-      showWarningToast("Category ID is missing.", {
-        id: "category-id-submit-missing",
-      });
       return;
     }
 
@@ -74,9 +67,6 @@ const EditCategory = () => {
     if (!normalizedName) {
       setError("Category name is required.");
       setSuccess("");
-      showWarningToast("Category name is required.", {
-        id: "category-update-validation",
-      });
       return;
     }
 
@@ -106,8 +96,9 @@ const EditCategory = () => {
       name={name}
       onNameChange={setName}
       onSubmit={handleSubmit}
-      errorMessage={error}
+      errorMessage={error === "Category name is required." ? "" : error}
       successMessage={success}
+      nameError={error === "Category name is required." ? error : undefined}
       submitting={submitting}
       loading={loading}
       loadingMessage="Loading category details..."

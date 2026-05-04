@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { BarChart3, MapPinned, X } from "lucide-react";
 import { getApiErrorMessage } from "@/lib/api/errors";
-import { showErrorToast, showWarningToast } from "@/lib/toast";
+import { showErrorToast } from "@/lib/toast";
 import {
   getLocationPlaceDetails,
   getLocationSuggestions,
@@ -80,6 +80,12 @@ const buildRangeBackground = (value: string, min: number, max: number) => {
   return {
     background: `linear-gradient(90deg, #004ac6 0%, #004ac6 ${safeRatio}%, #dbe1ff ${safeRatio}%, #dbe1ff 100%)`,
   };
+};
+
+const preventNumberInputScroll = (
+  event: React.WheelEvent<HTMLInputElement>,
+) => {
+  event.currentTarget.blur();
 };
 
 const hasStructuredPreferences = (value: RecommendationPreferences) =>
@@ -711,10 +717,7 @@ const RecommendationPage = () => {
 
     if (Object.keys(validationErrors).length > 0) {
       setFieldErrors(validationErrors);
-      setError("Please correct the highlighted fields and try again.");
-      showWarningToast("Please correct the highlighted fields and try again.", {
-        id: "recommendations-validation-error",
-      });
+      setError("");
       return;
     }
 
@@ -871,6 +874,7 @@ const RecommendationPage = () => {
               name="price"
               value={formValues.price}
               onChange={handlePreferenceChange}
+              onWheel={preventNumberInputScroll}
               placeholder={RECOMMENDATION_FORM_TEXT.pricePlaceholder}
               className={`${formFieldClassName} ${
                 fieldErrors.price
@@ -922,6 +926,7 @@ const RecommendationPage = () => {
               name="area"
               value={formValues.area}
               onChange={handlePreferenceChange}
+              onWheel={preventNumberInputScroll}
               placeholder={RECOMMENDATION_FORM_TEXT.areaPlaceholder}
               className={`${formFieldClassName} ${
                 fieldErrors.area
