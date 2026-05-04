@@ -5,7 +5,7 @@ import {
   Info,
   SlidersHorizontal,
 } from "lucide-react";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, type WheelEvent, useEffect, useMemo, useState } from "react";
 import { APP_ROUTES } from "@/config/routes";
 import { useAuth } from "@/hooks/useAuth";
 import { showErrorToast, showInfoToast, showSuccessToast, showWarningToast } from "@/lib/toast";
@@ -59,6 +59,12 @@ const formatNumber = (value: number) =>
   new Intl.NumberFormat("en-US", {
     maximumFractionDigits: 0,
   }).format(value);
+
+const handleNumberInputWheel = (event: WheelEvent<HTMLInputElement>) => {
+  if (document.activeElement === event.currentTarget) {
+    event.currentTarget.blur();
+  }
+};
 
 const RecommendationSettingsPage = () => {
   const router = useRouter();
@@ -367,6 +373,7 @@ const RecommendationSettingsPage = () => {
                             max="100"
                             step="1"
                             value={formState[field.key]}
+                            onWheel={handleNumberInputWheel}
                             onChange={(event) =>
                               handleWeightChange(field.key, event.target.value)
                             }

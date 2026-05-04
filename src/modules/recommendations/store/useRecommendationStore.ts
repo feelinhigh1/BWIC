@@ -12,6 +12,7 @@ import type {
   RecommendationParsedBriefMetadata,
   RecommendationPlaceDetails,
   RecommendationPreferences,
+  RecommendationResponseMeta,
 } from "@/modules/recommendations/types";
 
 type RecommendationRequestIdentity = {
@@ -102,6 +103,8 @@ export interface RecommendationStoreState {
   pagination: RecommendationPagination;
   summary: RecommendationParsedBriefMetadata | null;
   appliedWeights: RecommendationWeights | null;
+  weightSource: RecommendationResponseMeta["weightSource"] | null;
+  isDefaultWeights: boolean | null;
   hasGenerated: boolean;
   lastGeneratedAt: number | null;
   lastCompletedRequestKey: string | null;
@@ -124,6 +127,8 @@ export interface RecommendationStoreState {
     pagination: RecommendationPagination;
     summary: RecommendationParsedBriefMetadata | null;
     appliedWeights: RecommendationWeights | null;
+    weightSource: RecommendationResponseMeta["weightSource"] | null;
+    isDefaultWeights: boolean | null;
     requestKey: string;
   }) => void;
   setPage: (page: number) => void;
@@ -151,6 +156,8 @@ const initialState = {
   pagination: cloneDefaultPagination(),
   summary: null as RecommendationParsedBriefMetadata | null,
   appliedWeights: null as RecommendationWeights | null,
+  weightSource: null as RecommendationResponseMeta["weightSource"] | null,
+  isDefaultWeights: null as boolean | null,
   hasGenerated: false,
   lastGeneratedAt: null as number | null,
   lastCompletedRequestKey: null as string | null,
@@ -208,6 +215,8 @@ export const useRecommendationStore = create<RecommendationStoreState>()(
           recommendations: [],
           summary: null,
           appliedWeights: null,
+          weightSource: null,
+          isDefaultWeights: null,
           pagination: {
             ...cloneDefaultPagination(),
             limit: state.pagination.limit,
@@ -219,6 +228,8 @@ export const useRecommendationStore = create<RecommendationStoreState>()(
         pagination,
         summary,
         appliedWeights,
+        weightSource,
+        isDefaultWeights,
         requestKey,
       }) =>
         set({
@@ -226,6 +237,8 @@ export const useRecommendationStore = create<RecommendationStoreState>()(
           pagination,
           summary,
           appliedWeights,
+          weightSource,
+          isDefaultWeights,
           lastCompletedRequestKey: requestKey,
         }),
       setPage: (page) =>
@@ -258,7 +271,7 @@ export const useRecommendationStore = create<RecommendationStoreState>()(
     }),
     {
       name: RECOMMENDATION_SESSION_STORAGE_KEY,
-      version: 2,
+      version: 3,
       skipHydration: true,
       storage: createJSONStorage(() => sessionStorage),
       migrate: (persistedState) => {
@@ -275,6 +288,8 @@ export const useRecommendationStore = create<RecommendationStoreState>()(
           appliedPlaceDetails: Array.isArray(state.appliedPlaceDetails)
             ? state.appliedPlaceDetails
             : [],
+          weightSource: state.weightSource ?? null,
+          isDefaultWeights: state.isDefaultWeights ?? null,
         };
       },
       partialize: (state) => ({
@@ -287,6 +302,8 @@ export const useRecommendationStore = create<RecommendationStoreState>()(
         pagination: state.pagination,
         summary: state.summary,
         appliedWeights: state.appliedWeights,
+        weightSource: state.weightSource,
+        isDefaultWeights: state.isDefaultWeights,
         hasGenerated: state.hasGenerated,
         lastGeneratedAt: state.lastGeneratedAt,
         lastCompletedRequestKey: state.lastCompletedRequestKey,

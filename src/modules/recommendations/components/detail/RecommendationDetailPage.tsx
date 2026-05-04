@@ -85,6 +85,10 @@ const RecommendationDetailPage = () => {
   const pagination = useRecommendationStore((state) => state.pagination);
   const recommendationMeta = useRecommendationStore((state) => state.summary);
   const appliedWeights = useRecommendationStore((state) => state.appliedWeights);
+  const weightSource = useRecommendationStore((state) => state.weightSource);
+  const isDefaultWeights = useRecommendationStore(
+    (state) => state.isDefaultWeights,
+  );
   const hasHydrated = useRecommendationStore((state) => state.hasHydrated);
   const setHasHydrated = useRecommendationStore(
     (state) => state.setHasHydrated,
@@ -125,15 +129,19 @@ const RecommendationDetailPage = () => {
       meta: {
         parsedBrief: recommendationMeta,
         appliedWeights,
+        weightSource: weightSource ?? undefined,
+        isDefaultWeights: isDefaultWeights ?? undefined,
       },
     };
   }, [
     appliedWeights,
+    isDefaultWeights,
     pagination.limit,
     pagination.page,
     propertyId,
     recommendationMeta,
     recommendations,
+    weightSource,
   ]);
 
   const handleBack = () => {

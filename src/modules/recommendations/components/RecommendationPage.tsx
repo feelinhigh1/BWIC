@@ -535,6 +535,8 @@ const RecommendationPage = () => {
           },
           summary: response.meta?.parsedBrief ?? null,
           appliedWeights: response.meta?.appliedWeights ?? null,
+          weightSource: response.meta?.weightSource ?? null,
+          isDefaultWeights: response.meta?.isDefaultWeights ?? null,
           requestKey,
         });
       } catch (fetchError) {
