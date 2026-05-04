@@ -1,50 +1,246 @@
 "use client";
 
-import React, { useCallback, useEffect, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+import Link from "next/link";
 import { useRouter } from "next/router";
-import { Trash2 } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Eye,
+  Pencil,
+  PlusCircle,
+  Search,
+  Trash2,
+} from "lucide-react";
+import AppImage from "@/components/ui/AppImage";
 import ConfirmModal from "@/components/ui/ConfirmModal";
-import Table from "@/components/admin/Table";
 import { APP_ROUTES } from "@/config/routes";
+import { assetUrl } from "@/lib/api/client";
 import { showApiErrorToast, showSuccessToast } from "@/lib/toast";
 import { getCategory } from "@/modules/categories/api";
-import { deleteProperty, getProperties } from "@/modules/properties/api";
-import {
-  formatPropertyTableRows,
-  PropertyTableRow,
-} from "@/modules/properties/table-rows";
 import type { CategoryDetail } from "@/modules/categories/types";
+import { normalizePropertySearchInput } from "@/modules/properties/filters";
+import { deleteProperty, getProperties } from "@/modules/properties/api";
+import { formatPropertyReference } from "@/modules/properties/reference";
+import {
+  formatPropertyStatus,
+  normalizePropertyStatus,
+} from "@/modules/properties/status";
+import type { PropertySummary } from "@/modules/properties/types";
+
+const ADMIN_PAGE_SIZE = 5;
+const PROPERTY_FETCH_LIMIT = 50;
 
 interface CategoryState extends CategoryDetail {
-  properties: PropertyTableRow[];
+  properties: PropertySummary[];
 }
+
+interface CategoryFilters {
+  location: string;
+  status: string;
+}
+
+const defaultFilters: CategoryFilters = {
+  location: "",
+  status: "",
+};
+
+const formatCategoryLabel = (value?: string | null): string => {
+  const normalized = value?.trim();
+
+  if (!normalized) {
+    return "Category";
+  }
+
+  return normalized.charAt(0).toUpperCase() + normalized.slice(1);
+};
+
+const fieldClassName =
+  "h-14 w-full appearance-none rounded-2xl border border-transparent bg-[#dfe5ff] px-5 pr-12 text-[1rem] font-medium text-[#131b2e] outline-none transition focus:border-[#b9c8ff] focus:bg-white focus:ring-4 focus:ring-[#004ac6]/10";
+
+const parseNumericValue = (value?: string | number | null): number | null => {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const normalized = value.replace(/[^0-9.]/g, "");
+  if (!normalized) {
+    return null;
+  }
+
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
+const formatCompactNumber = (value: number): string =>
+  new Intl.NumberFormat("en-IN", {
+    maximumFractionDigits: value % 1 === 0 ? 0 : 1,
+    minimumFractionDigits: value % 1 === 0 ? 0 : 1,
+  }).format(value);
+
+const formatCurrency = (value?: string | number | null): string => {
+  const parsed = parseNumericValue(value);
+
+  if (parsed === null) {
+    return value ? `रू ${value}` : "रू N/A";
+  }
+
+  if (parsed >= 10_000_000) {
+    return `रू ${formatCompactNumber(parsed / 10_000_000)} Crore`;
+  }
+
+  if (parsed >= 100_000) {
+    return `रू ${formatCompactNumber(parsed / 100_000)} Lakh`;
+  }
+
+  return `रू ${new Intl.NumberFormat("en-IN", {
+    maximumFractionDigits: 0,
+  }).format(parsed)}`;
+};
+
+const formatPercent = (value?: string | number | null): string => {
+  const parsed = parseNumericValue(value);
+  if (parsed === null) {
+    return "N/A";
+  }
+
+  return `${formatCompactNumber(parsed)}%`;
+};
+
+const formatArea = (value?: string | number | null): string => {
+  const parsed = parseNumericValue(value);
+  if (parsed === null) {
+    return value ? `${value} sq ft` : "N/A";
+  }
+
+  return `${new Intl.NumberFormat("en-IN", {
+    maximumFractionDigits: 0,
+  }).format(parsed)} sq ft`;
+};
+
+const getPrimaryImage = (property: PropertySummary): string | null =>
+  property.primaryImage ?? property.images?.[0] ?? null;
+
+const getStatusMeta = (status?: string | null) => {
+  switch (normalizePropertyStatus(status)) {
+    case "Available":
+      return {
+        label: "Active",
+        className: "bg-[#daf8df] text-[#18803d]",
+      };
+    case "Pending":
+      return {
+        label: "Pending",
+        className: "bg-[#fff0bf] text-[#ab6a00]",
+      };
+    case "Sold":
+      return {
+        label: "Sold",
+        className: "bg-[#ffdfe0] text-[#c41f1f]",
+      };
+    default:
+      return {
+        label: formatPropertyStatus(status),
+        className: "bg-[#eceff7] text-[#4b5568]",
+      };
+  }
+};
+
+const buildPaginationItems = (currentPage: number, totalPages: number) => {
+  if (totalPages <= 4) {
+    return Array.from({ length: totalPages }, (_, index) => index + 1);
+  }
+
+  if (currentPage <= 2) {
+    return [1, 2, 3, "...", totalPages];
+  }
+
+  if (currentPage >= totalPages - 1) {
+    return [1, "...", totalPages - 2, totalPages - 1, totalPages];
+  }
+
+  return [1, "...", currentPage, currentPage + 1, "...", totalPages];
+};
+
+const SortChevron = () => (
+  <svg
+    className="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#5b6275]"
+    viewBox="0 0 20 20"
+    fill="currentColor"
+    aria-hidden="true"
+  >
+    <path
+      fillRule="evenodd"
+      d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.938a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06Z"
+      clipRule="evenodd"
+    />
+  </svg>
+);
 
 export default function CategoryPropertiesPage() {
   const router = useRouter();
-  const { id } = router.query;
+  const rawId = router.query.id;
+  const categoryId = Array.isArray(rawId) ? rawId[0] : rawId;
 
   const [category, setCategory] = useState<CategoryState | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filters, setFilters] = useState<CategoryFilters>(defaultFilters);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<number | null>(null);
-  const [pendingDeleteRow, setPendingDeleteRow] =
-    useState<PropertyTableRow | null>(null);
+  const [pendingDeleteProperty, setPendingDeleteProperty] =
+    useState<PropertySummary | null>(null);
 
   const fetchCategoryProperties = useCallback(async () => {
-    if (!id) {
+    if (!categoryId) {
       return;
     }
 
+    setLoading(true);
+    setErrorMsg(null);
+
     try {
-      const [data, propertiesPayload] = await Promise.all([
-        getCategory(String(id)),
-        getProperties({ categoryId: String(id) }),
+      const [categoryData, firstPage] = await Promise.all([
+        getCategory(String(categoryId)),
+        getProperties({
+          categoryId: String(categoryId),
+          page: 1,
+          limit: PROPERTY_FETCH_LIMIT,
+        }),
       ]);
 
-      const cleanedProperties = formatPropertyTableRows(propertiesPayload.data ?? []);
+      const firstBatch = firstPage.data ?? [];
+      const totalPages = Math.max(firstPage.pagination?.totalPages ?? 1, 1);
+
+      const remainingPages =
+        totalPages > 1
+          ? await Promise.all(
+              Array.from({ length: totalPages - 1 }, (_, index) =>
+                getProperties({
+                  categoryId: String(categoryId),
+                  page: index + 2,
+                  limit: PROPERTY_FETCH_LIMIT,
+                }),
+              ),
+            )
+          : [];
 
       setCategory({
-        ...data,
-        properties: cleanedProperties,
+        ...categoryData,
+        properties: [
+          ...firstBatch,
+          ...remainingPages.flatMap((payload) => payload.data ?? []),
+        ],
       });
     } catch (err) {
       console.error("Error fetching category properties:", err);
@@ -53,32 +249,104 @@ export default function CategoryPropertiesPage() {
         "Unable to load the category properties right now.",
         { id: "category-properties-load-error" },
       );
+      setErrorMsg("Unable to load the category properties right now.");
     } finally {
       setLoading(false);
     }
-  }, [id]);
+  }, [categoryId]);
 
   useEffect(() => {
     void fetchCategoryProperties();
   }, [fetchCategoryProperties]);
 
-  const handleRowClick = (row: PropertyTableRow) =>
-    console.log("Property clicked:", row);
+  const locationOptions = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          (category?.properties ?? [])
+            .map((property) => property.location?.trim())
+            .filter(Boolean) as string[],
+        ),
+      ).sort((left, right) => left.localeCompare(right)),
+    [category?.properties],
+  );
 
-  const handleEdit = (row: PropertyTableRow) =>
-    router.push(APP_ROUTES.adminEditProperty(row.id));
+  const filteredProperties = useMemo(() => {
+    const normalizedSearch = normalizePropertySearchInput(searchTerm).toLowerCase();
+
+    return (category?.properties ?? []).filter((property) => {
+      const matchesLocation =
+        !filters.location || property.location === filters.location;
+      const matchesStatus =
+        !filters.status || normalizePropertyStatus(property.status) === filters.status;
+
+      const matchesSearch =
+        !normalizedSearch ||
+        property.title.toLowerCase().includes(normalizedSearch) ||
+        property.location.toLowerCase().includes(normalizedSearch) ||
+        String(property.id).includes(normalizedSearch) ||
+        formatPropertyReference(property.id).includes(normalizedSearch);
+
+      return matchesLocation && matchesStatus && matchesSearch;
+    });
+  }, [category?.properties, filters.location, filters.status, searchTerm]);
+
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredProperties.length / ADMIN_PAGE_SIZE),
+  );
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filters.location, filters.status, searchTerm]);
+
+  useEffect(() => {
+    setCurrentPage((previousPage) => Math.min(previousPage, totalPages));
+  }, [totalPages]);
+
+  const paginatedProperties = useMemo(() => {
+    const startIndex = (currentPage - 1) * ADMIN_PAGE_SIZE;
+    return filteredProperties.slice(startIndex, startIndex + ADMIN_PAGE_SIZE);
+  }, [currentPage, filteredProperties]);
+
+  const paginationItems = useMemo(
+    () => buildPaginationItems(currentPage, totalPages),
+    [currentPage, totalPages],
+  );
+
+  const showingFrom =
+    filteredProperties.length === 0 ? 0 : (currentPage - 1) * ADMIN_PAGE_SIZE + 1;
+  const showingTo = Math.min(
+    currentPage * ADMIN_PAGE_SIZE,
+    filteredProperties.length,
+  );
+
+  const handleFilterChange =
+    (key: keyof CategoryFilters) =>
+    (event: React.ChangeEvent<HTMLSelectElement>) => {
+      setFilters((previous) => ({
+        ...previous,
+        [key]: event.target.value,
+      }));
+    };
 
   const handleDelete = async () => {
-    if (!pendingDeleteRow) {
+    if (!pendingDeleteProperty || !category) {
       return;
     }
 
     try {
-      setDeletingId(pendingDeleteRow.id);
-      await deleteProperty(pendingDeleteRow.id);
-      setPendingDeleteRow(null);
+      setDeletingId(pendingDeleteProperty.id);
+      await deleteProperty(pendingDeleteProperty.id);
+      setCategory({
+        ...category,
+        propertyCount: Math.max(0, category.propertyCount - 1),
+        properties: category.properties.filter(
+          (property) => property.id !== pendingDeleteProperty.id,
+        ),
+      });
+      setPendingDeleteProperty(null);
       showSuccessToast("Property deleted successfully.");
-      void fetchCategoryProperties();
     } catch (err) {
       console.error("Failed to delete property:", err);
       showApiErrorToast(
@@ -91,46 +359,422 @@ export default function CategoryPropertiesPage() {
     }
   };
 
-  if (loading)
-    return <p className="text-center mt-10 text-gray-600">Loading...</p>;
+  const renderSkeletonRows = () =>
+    Array.from({ length: ADMIN_PAGE_SIZE }, (_, index) => (
+      <tr key={`category-property-loading-${index}`} className="bg-white">
+        <td className="px-5 py-5 sm:px-8">
+          <div className="flex items-center gap-4">
+            <div className="h-20 w-20 animate-pulse rounded-2xl bg-[#e9edff]" />
+            <div className="space-y-3">
+              <div className="h-5 w-48 animate-pulse rounded-full bg-[#e9edff]" />
+              <div className="h-4 w-24 animate-pulse rounded-full bg-[#f0f3ff]" />
+            </div>
+          </div>
+        </td>
+        {Array.from({ length: 5 }, (_, columnIndex) => (
+          <td key={columnIndex} className="px-4 py-5">
+            <div className="h-5 w-24 animate-pulse rounded-full bg-[#eef1ff]" />
+          </td>
+        ))}
+        <td className="px-5 py-5 sm:px-8">
+          <div className="ml-auto flex w-fit gap-3">
+            {Array.from({ length: 3 }, (_, actionIndex) => (
+              <div
+                key={actionIndex}
+                className="h-10 w-10 animate-pulse rounded-full bg-[#eef1ff]"
+              />
+            ))}
+          </div>
+        </td>
+      </tr>
+    ));
 
-  if (!category)
+  if (errorMsg) {
     return (
-      <p className="text-center mt-10 text-gray-600">Category not found.</p>
+      <section className="px-4 py-8 sm:px-6 lg:px-10">
+        <div className="rounded-[2rem] bg-white px-6 py-10 text-center shadow-[0_24px_70px_rgba(19,27,46,0.08)]">
+          <h2 className="font-auth-headline text-3xl font-bold text-[#b42318]">
+            {errorMsg}
+          </h2>
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+            <button
+              type="button"
+              onClick={() => void fetchCategoryProperties()}
+              className="inline-flex items-center justify-center rounded-2xl bg-[#004ac6] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#003da4]"
+            >
+              Retry
+            </button>
+            <button
+              type="button"
+              onClick={() => void router.push(APP_ROUTES.adminCategories)}
+              className="inline-flex items-center justify-center rounded-2xl bg-[#e8edff] px-5 py-3 text-sm font-semibold text-[#131b2e] transition hover:bg-[#dae2ff]"
+            >
+              Back to Categories
+            </button>
+          </div>
+        </div>
+      </section>
     );
+  }
+
+  if (!loading && !category) {
+    return (
+      <section className="px-4 py-8 sm:px-6 lg:px-10">
+        <div className="rounded-[2rem] bg-white px-6 py-10 text-center shadow-[0_24px_70px_rgba(19,27,46,0.08)]">
+          <h2 className="font-auth-headline text-3xl font-bold text-[#131b2e]">
+            Category not found
+          </h2>
+          <p className="mt-4 text-base leading-7 text-[#5b6275]">
+            This category could not be found or is no longer available.
+          </p>
+          <button
+            type="button"
+            onClick={() => void router.push(APP_ROUTES.adminCategories)}
+            className="mt-6 inline-flex items-center justify-center rounded-2xl bg-[#004ac6] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#003da4]"
+          >
+            Back to Categories
+          </button>
+        </div>
+      </section>
+    );
+  }
 
   return (
-    <div className="p-6 pt-15">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-4xl font-bold mb-4 capitalize">
-          Category: {category.name}
-        </h2>
-        <button
-          className="text-l font-bold text-white bg-gray-500 px-4 py-2 rounded hover:cursor-pointer"
-          onClick={() => router.back()}
-        >
-          ← Back
-        </button>
+    <section className="px-4 py-8 sm:px-6 lg:px-10">
+      <div className="mx-auto max-w-[1500px]">
+        <div className="mb-8 flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
+          <div className="max-w-3xl">
+            <div className="inline-flex items-center gap-2 rounded-full border border-[#b4c5ff] bg-[#f0f4ff] px-4 py-2 text-xs font-bold uppercase tracking-[0.14em] text-[#004ac6]">
+              Category Portfolio
+            </div>
+            <h1 className="mt-5 font-auth-headline text-[2.75rem] font-bold tracking-[-0.05em] text-[#131b2e] sm:text-[3.4rem]">
+              Category: {formatCategoryLabel(category?.name)}
+            </h1>
+            <p className="mt-4 max-w-2xl text-base leading-7 text-[#4b5568] sm:text-lg">
+              Review every listing assigned to this category, then open, edit,
+              or remove individual properties without leaving the catalog
+              context.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={() => void router.push(APP_ROUTES.adminCategories)}
+              className="inline-flex h-14 items-center justify-center rounded-2xl bg-[#e8edff] px-6 text-base font-semibold text-[#131b2e] transition hover:bg-[#dae2ff]"
+            >
+              Back to Categories
+            </button>
+            <Link
+              href={APP_ROUTES.adminAddProperty}
+              className="inline-flex h-14 items-center gap-3 rounded-2xl border border-[#0f49cc] bg-[#1550cf] px-6 text-base font-semibold text-white shadow-[0_20px_35px_rgba(21,80,207,0.22)] transition hover:bg-[#0f49cc] focus:outline-none focus:ring-4 focus:ring-[#0f49cc]/20"
+            >
+              <PlusCircle className="h-5 w-5" />
+              <span>Add New Property</span>
+            </Link>
+          </div>
+        </div>
+
+        <div className="mt-8 rounded-[2rem] bg-white p-5 shadow-[0_24px_70px_rgba(19,27,46,0.06)] sm:p-8">
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-6">
+            <label className="block lg:col-span-3">
+              <span className="mb-3 ml-1 block text-xs font-extrabold uppercase tracking-[0.12em] text-[#1b2236]">
+                Search
+              </span>
+              <span className="relative block flex-1">
+                <Search className="pointer-events-none absolute left-5 top-1/2 h-5 w-5 -translate-y-1/2 text-[#5b6275]" />
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(event) => setSearchTerm(event.target.value)}
+                  placeholder="Search by property ID, name, or location..."
+                  className="h-14 w-full rounded-2xl border border-transparent bg-[#dfe5ff] pl-14 pr-5 text-[1rem] font-medium text-[#131b2e] outline-none transition placeholder:text-[#5b6275] focus:border-[#b9c8ff] focus:bg-white focus:ring-4 focus:ring-[#004ac6]/10"
+                />
+              </span>
+            </label>
+
+            <label className="block">
+              <span className="mb-3 ml-1 block text-xs font-extrabold uppercase tracking-[0.12em] text-[#1b2236]">
+                Location
+              </span>
+              <span className="relative block">
+                <select
+                  value={filters.location}
+                  onChange={handleFilterChange("location")}
+                  className={fieldClassName}
+                >
+                  <option value="">All Locations</option>
+                  {locationOptions.map((location) => (
+                    <option key={location} value={location}>
+                      {location}
+                    </option>
+                  ))}
+                </select>
+                <SortChevron />
+              </span>
+            </label>
+
+            <label className="block">
+              <span className="mb-3 ml-1 block text-xs font-extrabold uppercase tracking-[0.12em] text-[#1b2236]">
+                Status
+              </span>
+              <span className="relative block">
+                <select
+                  value={filters.status}
+                  onChange={handleFilterChange("status")}
+                  className={fieldClassName}
+                >
+                  <option value="">All Statuses</option>
+                  <option value="Available">Active</option>
+                  <option value="Pending">Pending</option>
+                  <option value="Sold">Sold</option>
+                </select>
+                <SortChevron />
+              </span>
+            </label>
+
+            <div className="flex items-end lg:col-span-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setFilters(defaultFilters);
+                  setSearchTerm("");
+                }}
+                className="h-14 w-full rounded-2xl bg-[#dfe5ff] px-5 text-[1rem] font-bold text-[#131b2e] transition hover:bg-[#d1d9ff]"
+              >
+                Clear All Filters
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-10 overflow-hidden rounded-[2rem] bg-[#eef0ff] shadow-[0_24px_70px_rgba(19,27,46,0.08)]">
+          <div className="overflow-x-auto">
+            <table className="min-w-[1100px] w-full border-collapse text-left">
+              <thead>
+                <tr className="border-b border-[#e4e8fb] bg-[#eef0ff]">
+                  <th className="px-5 py-6 text-sm font-bold uppercase tracking-[0.18em] text-[#1a2135] sm:px-8">
+                    Property
+                  </th>
+                  <th className="px-4 py-6 text-sm font-bold uppercase tracking-[0.18em] text-[#1a2135]">
+                    Location
+                  </th>
+                  <th className="px-4 py-6 text-sm font-bold uppercase tracking-[0.18em] text-[#1a2135]">
+                    Area
+                  </th>
+                  <th className="px-4 py-6 text-sm font-bold uppercase tracking-[0.18em] text-[#1a2135]">
+                    Price (NPR)
+                  </th>
+                  <th className="px-4 py-6 text-sm font-bold uppercase tracking-[0.18em] text-[#1a2135]">
+                    ROI
+                  </th>
+                  <th className="px-4 py-6 text-sm font-bold uppercase tracking-[0.18em] text-[#1a2135]">
+                    Status
+                  </th>
+                  <th className="px-5 py-6 text-right text-sm font-bold uppercase tracking-[0.18em] text-[#1a2135] sm:px-8">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+
+              <tbody className="divide-y divide-[#edf0fb]">
+                {loading && renderSkeletonRows()}
+
+                {!loading && paginatedProperties.length === 0 && (
+                  <tr className="bg-white">
+                    <td colSpan={7} className="px-6 py-20 text-center">
+                      <div className="mx-auto max-w-xl">
+                        <p className="text-lg text-[#5b6275]">
+                          {(category?.properties.length ?? 0) === 0
+                            ? `No properties are assigned to ${category?.name}.`
+                            : "No properties match the current search or filters."}
+                        </p>
+                        {(category?.properties.length ?? 0) === 0 && (
+                          <Link
+                            href={APP_ROUTES.adminAddProperty}
+                            className="mt-6 inline-flex items-center justify-center gap-3 rounded-2xl bg-[#004ac6] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#003da4]"
+                          >
+                            <PlusCircle className="h-4 w-4" />
+                            Add New Property
+                          </Link>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                )}
+
+                {!loading &&
+                  paginatedProperties.map((property) => {
+                    const status = getStatusMeta(property.status);
+                    const primaryImage = getPrimaryImage(property);
+
+                    return (
+                      <tr
+                        key={property.id}
+                        className="group bg-white transition hover:bg-[#fbfcff]"
+                      >
+                        <td className="px-5 py-5 sm:px-8">
+                          <div className="flex min-w-[290px] items-center gap-5">
+                            <div className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-2xl bg-[#e7ebff]">
+                              {primaryImage ? (
+                                <AppImage
+                                  src={assetUrl(primaryImage)}
+                                  alt={property.title}
+                                  fill
+                                  sizes="80px"
+                                  className="h-full w-full object-cover transition duration-500 group-hover:scale-110"
+                                />
+                              ) : (
+                                <div className="flex h-full w-full items-center justify-center bg-[linear-gradient(135deg,#d9e2ff_0%,#eef2ff_100%)] text-xs font-semibold uppercase tracking-[0.14em] text-[#5b6275]">
+                                  No Image
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="min-w-0">
+                              <p className="font-auth-headline text-[1.45rem] font-bold leading-tight text-[#131b2e]">
+                                {property.title}
+                              </p>
+                              <p className="mt-1 text-[0.98rem] text-[#434655]">
+                                ID: {formatPropertyReference(property.id)}
+                              </p>
+                            </div>
+                          </div>
+                        </td>
+
+                        <td className="px-4 py-5 text-[1rem] font-medium text-[#394154]">
+                          {property.location}
+                        </td>
+
+                        <td className="px-4 py-5 text-[1rem] font-medium text-[#131b2e]">
+                          {formatArea(property.area)}
+                        </td>
+
+                        <td className="px-4 py-5 text-[1rem] font-bold text-[#0046d1]">
+                          {formatCurrency(property.price)}
+                        </td>
+
+                        <td className="px-4 py-5 text-[1rem] font-bold text-[#0046d1]">
+                          {formatPercent(property.roi)}
+                        </td>
+
+                        <td className="px-4 py-5">
+                          <span
+                            className={`inline-flex rounded-full px-4 py-1.5 text-xs font-extrabold uppercase tracking-[0.16em] ${status.className}`}
+                          >
+                            {status.label}
+                          </span>
+                        </td>
+
+                        <td className="px-5 py-5 sm:px-8">
+                          <div className="flex items-center justify-end gap-1">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                router.push(APP_ROUTES.propertyDetail(property.id))
+                              }
+                              className="inline-flex h-11 w-11 items-center justify-center rounded-full text-[#363c4d] transition hover:bg-[#edf1ff] hover:text-[#004ac6]"
+                              aria-label={`View ${property.title}`}
+                              title="View"
+                            >
+                              <Eye className="h-5 w-5" />
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() =>
+                                router.push(
+                                  APP_ROUTES.adminEditProperty(property.id),
+                                )
+                              }
+                              className="inline-flex h-11 w-11 items-center justify-center rounded-full text-[#363c4d] transition hover:bg-[#edf1ff] hover:text-[#004ac6]"
+                              aria-label={`Edit ${property.title}`}
+                              title="Edit"
+                            >
+                              <Pencil className="h-5 w-5" />
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => setPendingDeleteProperty(property)}
+                              disabled={deletingId === property.id}
+                              className="inline-flex h-11 w-11 items-center justify-center rounded-full text-[#363c4d] transition hover:bg-[#fff0f0] hover:text-[#ba1a1a] disabled:cursor-not-allowed disabled:opacity-50"
+                              aria-label={`Delete ${property.title}`}
+                              title="Delete"
+                            >
+                              <Trash2 className="h-5 w-5" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="flex flex-col gap-5 border-t border-[#e4e8fb] bg-[#f3f4ff] px-5 py-6 sm:px-8 lg:flex-row lg:items-center lg:justify-between">
+            <p className="text-[1rem] text-[#2f3447]">
+              Showing {showingFrom} to {showingTo} of {filteredProperties.length}{" "}
+              properties
+            </p>
+
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                disabled={currentPage === 1}
+                className="inline-flex h-11 w-11 items-center justify-center rounded-2xl text-[#131b2e] transition hover:bg-[#e1e6ff] disabled:cursor-not-allowed disabled:opacity-45"
+                aria-label="Previous page"
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </button>
+
+              {paginationItems.map((item, index) =>
+                typeof item !== "number" ? (
+                  <span
+                    key={`ellipsis-${index}`}
+                    className="px-2 text-lg text-[#434655]"
+                  >
+                    ...
+                  </span>
+                ) : (
+                  <button
+                    key={item}
+                    type="button"
+                    onClick={() => setCurrentPage(item)}
+                    className={`inline-flex h-12 min-w-12 items-center justify-center rounded-2xl px-4 text-[1rem] font-semibold transition ${
+                      currentPage === item
+                        ? "bg-[#004ac6] text-white shadow-[0_14px_30px_rgba(0,74,198,0.22)]"
+                        : "text-[#131b2e] hover:bg-[#e1e6ff]"
+                    }`}
+                  >
+                    {item}
+                  </button>
+                ),
+              )}
+
+              <button
+                type="button"
+                onClick={() =>
+                  setCurrentPage((page) => Math.min(totalPages, page + 1))
+                }
+                disabled={currentPage === totalPages}
+                className="inline-flex h-12 items-center gap-2 rounded-2xl px-4 text-[1rem] font-semibold text-[#131b2e] transition hover:bg-[#e1e6ff] disabled:cursor-not-allowed disabled:opacity-45"
+              >
+                <span>Next</span>
+                <ChevronRight className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {category.properties.length > 0 ? (
-        <Table<PropertyTableRow>
-          data={category.properties}
-          onRowClick={handleRowClick}
-          onEdit={handleEdit}
-          onDelete={(row) => setPendingDeleteRow(row)}
-        />
-      ) : (
-        <p className="text-gray-600 italic text-center">
-          No properties available for this category.
-        </p>
-      )}
-
       <ConfirmModal
-        isOpen={Boolean(pendingDeleteRow)}
+        isOpen={Boolean(pendingDeleteProperty)}
         onClose={() => {
           if (deletingId === null) {
-            setPendingDeleteRow(null);
+            setPendingDeleteProperty(null);
           }
         }}
         onConfirm={() => void handleDelete()}
@@ -140,17 +784,17 @@ export default function CategoryPropertiesPage() {
         icon={<Trash2 className="h-14 w-14" />}
         title="Delete Property?"
         description={
-          pendingDeleteRow ? (
+          pendingDeleteProperty ? (
             <>
               You are about to permanently delete the property{" "}
               <span className="font-semibold text-[#11182d]">
-                “{pendingDeleteRow.title}”
+                “{pendingDeleteProperty.title}”
               </span>
               . This action cannot be undone.
             </>
           ) : undefined
         }
       />
-    </div>
+    </section>
   );
 }
