@@ -31,8 +31,9 @@ import {
 } from "@/modules/properties/filters";
 import {
   DEFAULT_HIGHWAY_DISTANCE_KM,
-  PROPERTY_LOCATION_DROPDOWN_CLOSE_DELAY_MS,
+  PROPERTY_DEFAULT_LOCATION_RADIUS_KM,
   PROPERTY_DEFAULT_PAGE_SIZE,
+  PROPERTY_LOCATION_DROPDOWN_CLOSE_DELAY_MS,
   ROI_OPTIONS,
 } from "@/modules/properties/constants";
 import type {
@@ -227,6 +228,10 @@ const Properties = () => {
   const [locationLoading, setLocationLoading] = useState(false);
   const [isLocationDropdownOpen, setIsLocationDropdownOpen] = useState(false);
   const [selectedLocationPlaceId, setSelectedLocationPlaceId] = useState("");
+  const [selectedLocationDetails, setSelectedLocationDetails] =
+    useState<LocationPlaceDetails | null>(null);
+  const [appliedLocationDetails, setAppliedLocationDetails] =
+    useState<LocationPlaceDetails | null>(null);
   const [highwayDistanceKm, setHighwayDistanceKm] = useState(
     DEFAULT_HIGHWAY_DISTANCE_KM,
   );
@@ -255,6 +260,13 @@ const Properties = () => {
 
         const response = (await getProperties({
           ...appliedFilters,
+          ...(appliedLocationDetails
+            ? {
+                latitude: appliedLocationDetails.location.lat,
+                longitude: appliedLocationDetails.location.lng,
+                locationRadiusKm: PROPERTY_DEFAULT_LOCATION_RADIUS_KM,
+              }
+            : {}),
           search: appliedSearchTerm || undefined,
           sort: defaultPropertySort,
           page: pagination.page,
@@ -284,7 +296,13 @@ const Properties = () => {
     };
 
     void fetchProperties();
-  }, [appliedFilters, appliedSearchTerm, pagination.page, pagination.limit]);
+  }, [
+    appliedFilters,
+    appliedLocationDetails,
+    appliedSearchTerm,
+    pagination.page,
+    pagination.limit,
+  ]);
 
   useEffect(() => {
     if (!shouldFetchLocationSuggestions(locationQuery)) {
@@ -347,11 +365,26 @@ const Properties = () => {
     const nextQuery = event.target.value;
     setLocationQuery(nextQuery);
     setSelectedLocationPlaceId("");
+    setSelectedLocationDetails(null);
     setIsLocationDropdownOpen(true);
     setFilters((currentFilters) => ({
       ...currentFilters,
       location: nextQuery,
     }));
+  };
+
+  const resolveLocationSelectionDetails = async () => {
+    if (!selectedLocationPlaceId) {
+      return null;
+    }
+
+    if (selectedLocationDetails?.id === selectedLocationPlaceId) {
+      return selectedLocationDetails;
+    }
+
+    const details = await getLocationPlaceDetails(selectedLocationPlaceId);
+    setSelectedLocationDetails(details);
+    return details;
   };
 
   const handleLocationSelect = async (suggestion: LocationSuggestion) => {
@@ -364,6 +397,7 @@ const Properties = () => {
     setLocationQuery(suggestion.description);
     setLocationSuggestions([]);
     setIsLocationDropdownOpen(false);
+    setSelectedLocationDetails(null);
     setFilters((currentFilters) => ({
       ...currentFilters,
       location: fallbackFilterValue,
@@ -376,6 +410,7 @@ const Properties = () => {
         suggestion.description,
       );
 
+      setSelectedLocationDetails(details);
       setFilters((currentFilters) => ({
         ...currentFilters,
         location: resolvedFilterValue,
@@ -399,11 +434,23 @@ const Properties = () => {
     }));
   };
 
-  const handleApplyFilters = () => {
+  const handleApplyFilters = async () => {
+    let nextAppliedLocationDetails: LocationPlaceDetails | null = null;
+
+    try {
+      nextAppliedLocationDetails = await resolveLocationSelectionDetails();
+    } catch (fetchError) {
+      console.error(
+        "Failed to resolve property filter location details before applying:",
+        fetchError,
+      );
+    }
+
     setPagination((currentPagination) => ({
       ...currentPagination,
       page: 1,
     }));
+    setAppliedLocationDetails(nextAppliedLocationDetails);
     setAppliedFilters(filters);
     propertyListRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -417,6 +464,8 @@ const Properties = () => {
     setLocationSuggestions([]);
     setIsLocationDropdownOpen(false);
     setSelectedLocationPlaceId("");
+    setSelectedLocationDetails(null);
+    setAppliedLocationDetails(null);
     setHighwayDistanceKm(DEFAULT_HIGHWAY_DISTANCE_KM);
     setPagination((currentPagination) => ({
       ...currentPagination,

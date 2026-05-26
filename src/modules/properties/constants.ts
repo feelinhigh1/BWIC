@@ -5,6 +5,7 @@ export const PROPERTY_LOCATION_DROPDOWN_CLOSE_DELAY_MS = 150;
 export const PROPERTY_IMAGE_UPLOAD_LIMIT = 10;
 export const PROPERTY_IMAGE_MAX_FILE_SIZE_MB = 5;
 export const PROPERTY_DEFAULT_PAGE_SIZE = 9;
+export const PROPERTY_DEFAULT_LOCATION_RADIUS_KM = 3;
 export const DEFAULT_HIGHWAY_DISTANCE_KM = 0;
 export const ROI_OPTIONS = [
   { label: "6% +", value: "6" },

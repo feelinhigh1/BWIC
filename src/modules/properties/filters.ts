@@ -42,6 +42,9 @@ export type PropertySearchMode = "smart" | "plain";
 export interface PropertyFilterQuery extends Partial<PropertyFilters> {
   search?: string;
   searchMode?: PropertySearchMode;
+  latitude?: number;
+  longitude?: number;
+  locationRadiusKm?: number;
   sort?: PropertySortValue;
   page?: number;
   limit?: number;
